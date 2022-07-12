@@ -48,9 +48,14 @@ ioServer.on("connection", (socket) => {
 
     socket.onAny((event) => {
         // console.log(`Socket event : ${event}`);
-    })
+    });
 
-    socket.on("nickname", (nickname) => (socket["nickname"] = nickname))
+    // socket.on("newCanvas", (whiteboard) => {
+    //     // socket["whiteboard"] = whiteboard;
+    //     console.log("testtesttes")
+    // });
+
+    // socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
 
     socket.on("enter_room", (roomName, done) => {
         socket.join(roomName); // room
@@ -69,6 +74,7 @@ ioServer.on("connection", (socket) => {
 
     socket.on("new_message", (msg, room, done) => {
         // console.log("__debug 1 ", here);
+        console.log(socket.nickname);
         socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`);
         done();
     });
@@ -83,29 +89,39 @@ ioServer.on("connection", (socket) => {
         delete connectedClient[socket.id];
     }); // client 관리용
 
+    // canvas add
+    socket.on(socketEvent.DRAW, (data) => {
+        const {
+          prev,
+          curr,
+          color,
+          thickness,
+        } = data;
+    
+        // const { ctx } = socket.witeboard;
+        
+        // ctx.beginPath();
+        // ctx.strokeStyle = color;
+        // ctx.lineWidth = thickness;
+        // ctx.moveTo(prev.x, prev.y);
+        // ctx.lineTo(curr.x, curr.y);
+        // ctx.lineJoin = 'round';
+        // ctx.lineCap = 'round';
+        // ctx.stroke();
+    });
+
     socket.on(socketEvent.DRAW, (data) => {
         const client = connectedClient[socket.id];
-        // // console.log(data.name);
-
-        // // socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName));
+        console.log(client, socket.rooms);
 
         client.prev = client.curr || data;
         client.curr = data;             
-        
-        // socket.to(data.room).emit(socketEvent.DRAW, {
-        //     prev: {
-        //         x: client.prev.x,
-        //         y: client.prev.y,
-        //       },
-        //       curr: {
-        //         x: client.curr.x,
-        //         y: client.curr.y,
-        //       },
-        //       color: client.curr.color,
-        //       thickness: client.curr.thickness,
-        // });
 
-        ioServer.sockets.emit(socketEvent.DRAW, {
+        // rooms = ioServer.sockets.adapter.rooms
+
+        // socket.to(data.name).emit("new_message", `123123123`);
+        // ioServer.sockets.emit(socketEvent.DRAW, {
+        socket.to(data.name).emit(socketEvent.DRAW, {
             prev: {
                 x: client.prev.x,
                 y: client.prev.y,
@@ -117,6 +133,19 @@ ioServer.on("connection", (socket) => {
               color: client.curr.color,
               thickness: client.curr.thickness,
         });
+
+        // ioServer.sockets.emit(socketEvent.DRAW, {
+        //     prev: {
+        //         x: client.prev.x,
+        //         y: client.prev.y,
+        //       },
+        //       curr: {
+        //         x: client.curr.x,
+        //         y: client.curr.y,
+        //       },
+        //       color: client.curr.color,
+        //       thickness: client.curr.thickness,
+        // });
     });
 
     socket.on(socketEvent.DRAW_BEGIN_PATH, () => {
