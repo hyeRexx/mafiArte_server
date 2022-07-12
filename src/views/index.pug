@@ -29,6 +29,13 @@ html(lang="en")
                 form#msg
                     input(placeholder="message", required, type="text")
                     button Send
+                div#call
+                    div#myStream
+                        video#myFace(autoplay, playinline, width="300", height="300", style="background-color: red;")
+                        button#mute Mute
+                        button#camera Turn Camera Off
+                        select#cameras
+                    div#othersStream
             //- dev#container
             //-     canvas#myCanvas(width="300", height="300")
         footer 

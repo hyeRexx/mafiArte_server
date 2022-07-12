@@ -51,17 +51,31 @@ ioServer.on("connection", (socket) => {
     });
 
 
-    socket.on("enter_room", (roomName, done) => {
+    socket.on("enter_room", (roomName, id, done) => {
         socket.join(roomName); // room
         done();
-        socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName));
+        socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName), id);
         ioServer.sockets.emit("room_change", publicRooms());
+    });
+
+    socket.on("offer", (offer, room, newbieID, offersId) => {
+        socket.to(newbieID).emit("offer", offer, offersId);
+    });
+
+    socket.on("answer", (answer, offersId, newbieId) => {
+        socket.to(offersId).emit("answer", answer, newbieId);
+    });
+
+    socket.on("ice", (ice, room, othersId, myId) => {
+        socket.to(othersId).emit("ice", ice, myId);
     });
     
     socket.on("disconnecting", () => {
         socket.rooms.forEach(room => socket.to(room).emit("bye", socket.nickname, countRoom(room) - 1));
     })
     
+    socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
+
     socket.on("disconnect", () => {
         ioServer.sockets.emit("room_change", publicRooms());
     });
