@@ -96,12 +96,19 @@ class Whiteboard {
   
       // Emit drawing data to other people
       socket.emit(socketEvents.DRAW, {
+        name,
         x,
         y,
-        name,
         color,
         thickness,
       });
+    //   socket.emit(socketEvents.DRAW, {
+    //     name,
+    //     x,
+    //     y,
+    //     color,
+    //     thickness,
+    //   });
     }
   
     /**
@@ -115,13 +122,12 @@ class Whiteboard {
       const {
         prev,
         curr,
-        name,
         color,
         thickness,
       } = data;
-  
+      const check = 'check';
       const { ctx } = this;
-  
+      
       ctx.beginPath();
       ctx.strokeStyle = color;
       ctx.lineWidth = thickness;

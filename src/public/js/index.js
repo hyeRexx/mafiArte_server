@@ -63,7 +63,7 @@ function showRoom() {
     room.hidden = false;
     // container.hidden = false;
     // canvas add 
-    const socket = io();
+    // const socket = io();
     // const canvas = document.getElementById('myCanvas');
 
     const canvas = document.createElement("canvas");
@@ -71,8 +71,9 @@ function showRoom() {
     canvas.setAttribute("style", 'background: #ddd;');
     container.appendChild(canvas);
     const whiteboard = new Whiteboard(canvas, socket, roomName);
+    // socket.emit("newCanvas", whiteboard);
     // whiteboard.addEventListener("click", handleDrawing);
-    console.log(whiteboard);
+    console.log("__debug", whiteboard);
 
     const h3 = room.querySelector("h3");
     h3.innerText = `Room ${roomName}`;
