@@ -81,34 +81,40 @@ class Whiteboard {
      * @private
      */
     _emitDrawingData(e) {
-      const {
-        canvas,
-        name,
-        color,
-        thickness,
-        socket,
-        socketEvents,
-      } = this;
-  
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-  
-      // Emit drawing data to other people
-      socket.emit(socketEvents.DRAW, {
-        name,
-        x,
-        y,
-        color,
-        thickness,
-      });
-    //   socket.emit(socketEvents.DRAW, {
-    //     name,
-    //     x,
-    //     y,
-    //     color,
-    //     thickness,
-    //   });
+        const {
+            canvas,
+            name,
+            color,
+            thickness,
+            socket,
+            socketEvents,
+        } = this;
+    
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const data = {
+            name,
+            x,
+            y,
+            color,
+            thickness,
+        }
+
+        // Emit drawing data to other people
+        socket.emit(socketEvents.DRAW, data);
+
+        // const { ctx } = this;
+        
+        // ctx.beginPath();
+        // ctx.strokeStyle = color;
+        // ctx.lineWidth = thickness;
+        // ctx.moveTo(x, y);
+        // ctx.lineTo(x + 0.1, y + 0.1);
+        // ctx.lineJoin = 'round';
+        // ctx.lineCap = 'round';
+        // ctx.stroke();
     }
   
     /**
@@ -125,7 +131,7 @@ class Whiteboard {
         color,
         thickness,
       } = data;
-      const check = 'check';
+
       const { ctx } = this;
       
       ctx.beginPath();
