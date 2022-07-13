@@ -18,6 +18,7 @@ const room = document.getElementById("room");
 const nameform = welcome.querySelector("#name");
 const roomNameInfo = welcome.querySelector("#roomname");
 const container = document.getElementById("container");
+const header = document.getElementById("header");
 // 연결이 끊기면 계속해서 재시도 하는 모습을 볼 수 있음 (프론트 콘솔)
 // handle Room Submit
 
@@ -84,12 +85,12 @@ function handleMuteCameraClick() {
     const cameraTracks = myStream.getVideoTracks();
     console.log(cameraTracks);
     if(cameraOff) {
-        cameraBtn.innerText = "Turn Camera Off";
+        cameraBtn.innerText = "Camera Off";
         cameraOff = false;
         cameraTracks.forEach(track => track.enabled = true);
     }
     else {
-        cameraBtn.innerText = "Turn Camera On";
+        cameraBtn.innerText = "Camera On";
         cameraOff = true;
         cameraTracks.forEach(track => track.enabled = false);
     }
@@ -108,6 +109,7 @@ let peerConnections = {};
 
 room.hidden = true;
 // container.hidden = true;
+header.hidden = false;
 
 let roomName;
 
@@ -162,13 +164,15 @@ function handleNicknameSubmit(event) {
 function showRoom() {
     welcome.hidden = true;
     room.hidden = false;
+    header.hidden = true;
+
     // container.hidden = false;
     // canvas add 
     // const socket = io();
     // const canvas = document.getElementById('myCanvas');
 
     const canvas = document.createElement("canvas");
-    canvas.setAttribute("id", `myCanvas${roomName}`);
+    canvas.setAttribute("id", "myCanvas");
     canvas.setAttribute("style", 'background: #ddd;');
     container.appendChild(canvas);
     const whiteboard = new Whiteboard(canvas, socket, roomName);
@@ -299,8 +303,8 @@ function handleAddStream(data, othersId) {
     video.autoplay = true;
     video.playsInline = true;
     video.style.backgroundColor = "blue";
-    video.width = 300;
-    video.height = 300;
+    video.width = 400;
+    video.height = 250;
     video.srcObject = data.stream;
 }
 
