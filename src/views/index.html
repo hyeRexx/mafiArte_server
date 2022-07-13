@@ -60,30 +60,30 @@
         </form>
     </div>
     <div id="room">
-    <div class="border" style="padding: 5em; margin-left: 20em; margin-right: 20em; height:1000px;">
+    <div class="border" style="padding: 5em; margin-left: 5em; margin-right: 20em; height:80em; width:100em;">
             <div class="player" style="margin-right:3em;">
                 <div id="call">
                     <div id="myStream">
                         <video id="myFace" autoplay playinline width="400" height="250" style="background-color: red;"></video>
                         <div style="width: 100%;">
-                            <button id="mute"> Mute</button>
-                            <button id="camera" style="display:inline-block; text-align: center;">Camera Off</button>
-                            <select id="cameras" style="display:inline-block;"></select>
+                            <!-- <button id="mute"> Mute</button> -->
+                            <button id="camera" style="text-align: center;">Camera Off</button>
+                            <!-- <select id="cameras" style="display:inline-block;"></select> -->
                         </div>
                     </div>
                     <hr style="margin-top: 0.3em; margin-bottom: 1em;"></hr>
                     <div id="othersStream"></div>
                 </div>
             </div>
-            <div class="canvas" style="background-color: blue;">
+            <div class="canvas">
                 <dev id="container"></dev>
             </div>
             <div class="chat" style="padding-left:30px;" >
                 <h3> </h3>
-                <ul> </ul>
+                <ul style="height: 100px;"> </ul>
                 <td>
                 <form id="msg">
-                    <input placeholder="message" required type="text" style="float:left; margin-left: 80px; margin-right:10px;"">
+                    <input placeholder="message" required type="text" style="float:left; margin-right:10px;">
                     <button style="margin-left:10px; margin-top:0px;">Send</button>
                 </form>
                 </td>

@@ -2,9 +2,9 @@ const socket = io();
 
 const call = document.getElementById("call");
 const myFace = document.getElementById("myFace");
-const muteBtn = document.getElementById("mute");
+// const muteBtn = document.getElementById("mute");
 const cameraBtn = document.getElementById("camera");
-const camerasSelect = document.getElementById("cameras");
+// const camerasSelect = document.getElementById("cameras");
 
 
 let myStream;
@@ -34,8 +34,8 @@ async function getCameras() {
             const option = document.createElement("option");
             option.value = camera.deviceId;
             option.innerText = camera.label;
-            if(currentCamera.label === camera.label) cameras.value = camera.deviceId;
-            camerasSelect.append(option);
+            // if(currentCamera.label === camera.label) cameras.value = camera.deviceId;
+            // camerasSelect.append(option);
         })
     }
     catch(e) {
@@ -54,7 +54,7 @@ async function getMedia(deviceId){
         if(!deviceId) {
             getCameras();
         }
-        setMute(true);
+        // setMute(true);
     }
     catch(e) {
         alert(e);
@@ -62,20 +62,20 @@ async function getMedia(deviceId){
     }
 }
 
-function setMute(mute) {
-    const audioTracks = myStream.getAudioTracks();
-    console.log(audioTracks);
-    if(mute) {
-        muteBtn.innerText = "UnMute";
-        muted = true;
-        audioTracks.forEach(track => track.enabled = false);
-    }
-    else {
-        muteBtn.innerText = "Mute";
-        muted = false;
-        audioTracks.forEach(track => track.enabled = true);
-    }
-}
+// function setMute(mute) {
+//     const audioTracks = myStream.getAudioTracks();
+//     console.log(audioTracks);
+//     if(mute) {
+//         muteBtn.innerText = "UnMute";
+//         muted = true;
+//         audioTracks.forEach(track => track.enabled = false);
+//     }
+//     else {
+//         muteBtn.innerText = "Mute";
+//         muted = false;
+//         audioTracks.forEach(track => track.enabled = true);
+//     }
+// }
 
 function handleMuteClick() {
     setMute(!muted);
@@ -165,6 +165,8 @@ function showRoom() {
     welcome.hidden = true;
     room.hidden = false;
     header.hidden = true;
+    // camerasSelect.hidden = true;
+    // muteBtn.hidden = true;
 
     // container.hidden = false;
     // canvas add 
@@ -314,9 +316,9 @@ socket.on("ice", (ice, othersId) => {
     peerConnections[othersId].addIceCandidate(ice);
 });
 
-muteBtn.addEventListener("click", handleMuteClick);
+// muteBtn.addEventListener("click", handleMuteClick);
 cameraBtn.addEventListener("click", handleMuteCameraClick);
-camerasSelect.addEventListener("input", handleCameraChange);
+// camerasSelect.addEventListener("input", handleCameraChange);
 
 
 // // canvas add 
