@@ -1,18 +1,58 @@
 import express from "express";
-import WebSocket, { WebSocketServer } from "ws";
+// import WebSocket, { WebSocketServer } from "ws"; // 불필요로 주석처리. 이후 삭제 가능
 import http from "http";
+import createError from 'http-errors';
+import cookieParser from 'cookie-parser';
 import {Server} from "socket.io";
 import {instrument} from "@socket.io/admin-ui";
+import cors from 'cors';
+import db from './lib/db'
+
+// 라우터 임포트
+const usersRouter = require('./routes/users');
 
 const app = express(); // app = express instance
-// app set?
+
+// 동적페이지(view) 관련된 부분 -> react로 완전 적용시엔 지워도 관계 없을듯.
 app.set("views", __dirname + "/views");
 app.set('view engine', 'ejs');
 app.engine('html', require('ejs').renderFile);
-app.use("/public", express.static(__dirname + "/public"));
-app.get("/", (_, res) => res.render("index.html"));
-app.get("/*", (_, res) => res.redirect("/"));
 
+// CORS Setting
+let corsOptions = {
+    origin: '*', // 추후 client 도메인 정해지면 값 세팅 필요
+    credentials: true
+}
+app.use(cors(corsOptions));
+
+// 미들웨어 세팅
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+
+// 정적 data 제공 - react에서 자체적으로 정적 data제공하나 임시로 남겨둠. 추후 불필요시 삭제 가능할듯.
+app.use("/public", express.static(__dirname + "/public"));
+
+// 라우팅
+app.get("/", (_, res) => res.render("index.html")); // 메인 페이지에 대해선 aws cloudfront를 통해 제공할 예정이라 추후 불필요시 삭제 가능
+// app.get("/*", (_, res) => res.redirect("/")); // 잘못된 주소 접근 관련 처리 따로 함으로 주석처리함. 이후 삭제 가능.
+app.use('/users', usersRouter);
+
+// 잘못된 주소로 접근했을 경우 에러처리 (에러발생 및 핸들러)
+app.use(function(req, res, next) {
+    next(createError(404));
+});
+app.use(function(err, req, res, next) {
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+    // render the error page
+    res.status(err.status || 500);
+    res.render('error');
+});
+
+// Server 생성
 const handleListen = () => console.log(`Listening on http://localhost:3000`);
 
 const httpServer = http.createServer(app); // create server하려면 request Listner 경로가 있어야 함. 당연.
@@ -27,6 +67,7 @@ const connectedClient = {};
 
 instrument(ioServer, {auth: false});
 
+// Socket 및 webRTC 관련 Settings
 function publicRooms() {
     const {sockets: {adapter: {sids, rooms}}} = ioServer;
     // const sids = ioServer.sockets.adapter.sids;
