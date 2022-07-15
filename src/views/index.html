@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>페이지 제목</title>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+    <style>
+        .border {  display: grid;
+        grid-template-columns: 0.6fr 0.8fr 0.8fr 0.8fr;
+        grid-template-rows: 0.0fr 1.2fr 1.2fr 1fr;
+        grid-auto-columns: 1fr;
+        gap: 0px 0px;
+        grid-auto-flow: row;
+        grid-template-areas:
+            "title title title title"
+            "player canvas canvas canvas"
+            "player canvas canvas canvas"
+            "player chat chat chat";
+        }
+
+        .player { grid-area: player; }
+
+        .canvas { grid-area: canvas; }
+
+        .chat { grid-area: chat; }
+
+        .title { grid-area: title; }
+        
+        #myCanvas {width: 100%; height: 100%;}
+
+        #name {margin: auto;}
+        #roomname {margin: auto;}
+
+        button {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items:center;
+            font-size: 0.8rem;
+        }
+        #mute {
+            display:inline-block;
+            margin-right: 0.3em;
+        }
+
+    </style>
+</head>
+<body>
+    <header id="header">
+        <h1>Mafia </h1>
+        <h4>"What are they drawing...?" </h4>
+    </header>
+    <div id="welcome">
+        <form id="name"><input placeholder="nickname" required type="text"><button>Save</button></form>
+        <form id="roomname"><input placeholder="room name" required type="text"><button>Enter Room </button>
+            <h4>Open Rooms :</h4>
+            <ul></ul>
+        </form>
+    </div>
+    <div id="room">
+    <div class="border" style="padding: 5em; margin-left: 5em; margin-right: 20em; height:80em; width:100em;">
+            <div class="player" style="margin-right:3em;">
+                <div id="call">
+                    <div id="myStream">
+                        <video id="myFace" autoplay playinline width="400" height="250" style="background-color: red;"></video>
+                        <div style="width: 100%;">
+                            <!-- <button id="mute"> Mute</button> -->
+                            <button id="camera" style="text-align: center;">Camera Off</button>
+                            <!-- <select id="cameras" style="display:inline-block;"></select> -->
+                        </div>
+                    </div>
+                    <hr style="margin-top: 0.3em; margin-bottom: 1em;"></hr>
+                    <div id="othersStream"></div>
+                </div>
+            </div>
+            <div class="canvas">
+                <dev id="container"></dev>
+            </div>
+            <div class="chat" style="padding-left:30px;" >
+                <h3> </h3>
+                <ul style="height: 100px;"> </ul>
+                <td>
+                <form id="msg">
+                    <input placeholder="message" required type="text" style="float:left; margin-right:10px;">
+                    <button style="margin-left:10px; margin-top:0px;">Send</button>
+                </form>
+                </td>
+                
+            </div>
+        </div>
+    </div>
+    <footer> <a>team 248 </a></footer>
+    <script src="../public/js/board.js"> </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/public/js/index.js"></script>
+</body>
+</html>

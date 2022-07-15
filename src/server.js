@@ -6,10 +6,11 @@ import {instrument} from "@socket.io/admin-ui";
 
 const app = express(); // app = express instance
 // app set?
-app.set("view engine", "pug"); // set views
 app.set("views", __dirname + "/views");
+app.set('view engine', 'ejs');
+app.engine('html', require('ejs').renderFile);
 app.use("/public", express.static(__dirname + "/public"));
-app.get("/", (_, res) => res.render("index")); // rendering
+app.get("/", (_, res) => res.render("index.html"));
 app.get("/*", (_, res) => res.redirect("/"));
 
 const handleListen = () => console.log(`Listening on http://localhost:3000`);
