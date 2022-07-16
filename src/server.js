@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import {Server} from "socket.io";
 import {instrument} from "@socket.io/admin-ui";
 import cors from 'cors';
-import db from './lib/db'
+import dbpool from './lib/db'
 
 // 라우터 임포트
 const usersRouter = require('./routes/users');
