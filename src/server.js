@@ -2,14 +2,19 @@ import express from "express";
 // import WebSocket, { WebSocketServer } from "ws"; // 불필요로 주석처리. 이후 삭제 가능
 import http from "http";
 import createError from 'http-errors';
+import cors from 'cors';
+import session from 'express-session';
+import {sessionConfig} from './sessionConfig';
+import passport from "passport";
+import { isLoggedIn, isNotLoggedIn } from "./routes/authMiddle";
 import cookieParser from 'cookie-parser';
 import {Server} from "socket.io";
 import {instrument} from "@socket.io/admin-ui";
-import cors from 'cors';
-import dbpool from './lib/db'
+import dbpool from './lib/db';
+const FileStore = require('session-file-store')(session);
 
 // 라우터 임포트
-const usersRouter = require('./routes/users');
+const authRouter = require('./routes/auth');
 
 const app = express(); // app = express instance
 
@@ -20,7 +25,7 @@ app.engine('html', require('ejs').renderFile);
 
 // CORS Setting
 let corsOptions = {
-    origin: '*', // 추후 client 도메인 정해지면 값 세팅 필요
+    origin: 'localhost:3001', // 추후 client 도메인 정해지면 값 세팅 필요
     credentials: true
 }
 app.use(cors(corsOptions));
@@ -30,13 +35,30 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// 정적 data 제공 - react에서 자체적으로 정적 data제공하나 임시로 남겨둠. 추후 불필요시 삭제 가능할듯.
-app.use("/public", express.static(__dirname + "/public"));
+app.use(session({
+    resave: false,
+    saveUninitialized: false,
+    secret: sessionConfig.secret,
+    store: new FileStore(),
+    cookie: {
+        httpOnly: true,
+        secure: false,
+    },
+}));
+
+// Auth 초기화 - express-session에 의존하므로 뒤에 위치시킴
+app.use(passport.initialize()); // req 객체에 passport 설정을 심음 (login, logout, isAuthenticated 등)
+app.use(passport.session()); // req.session 객체에 passport정보를 추가
+
 
 // 라우팅
 app.get("/", (_, res) => res.render("index.html")); // 메인 페이지에 대해선 aws cloudfront를 통해 제공할 예정이라 추후 불필요시 삭제 가능
 // app.get("/*", (_, res) => res.redirect("/")); // 잘못된 주소 접근 관련 처리 따로 함으로 주석처리함. 이후 삭제 가능.
-app.use('/users', usersRouter);
+app.use('/api/auth', authRouter);
+
+
+// 정적 data 제공 - react에서 자체적으로 정적 data제공하나 임시로 남겨둠. 추후 불필요시 삭제 가능할듯.
+app.use("/public", isLoggedIn, express.static(__dirname + "/public"));
 
 // 잘못된 주소로 접근했을 경우 에러처리 (에러발생 및 핸들러)
 app.use(function(req, res, next) {
@@ -46,10 +68,9 @@ app.use(function(err, req, res, next) {
     // set locals, only providing error in development
     res.locals.message = err.message;
     res.locals.error = req.app.get('env') === 'development' ? err : {};
-
+    console.log(err.message);
     // render the error page
     res.status(err.status || 500);
-    res.render('error');
 });
 
 // Server 생성
