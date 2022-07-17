@@ -9,6 +9,7 @@ import dbpool from './lib/db';
 import apiMember from './routes/member';
 import apiCanvas from './routes/canvas';
 import WebSocket from './routes/socket';
+import ingameRouter from './routes/ingame';
 
 const app = express(); // app = express instance
 
@@ -27,6 +28,7 @@ app.use(cookieParser());
 // routes
 app.use('/api/canvas', apiCanvas);
 app.use('/api/member', apiMember);
+app.use('/api/ingame', ingameRouter);
 
 // 잘못된 주소로 접근했을 경우 에러처리 (에러발생 및 핸들러)
 app.use((err, req, res, next) => {
