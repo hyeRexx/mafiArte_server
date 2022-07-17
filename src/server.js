@@ -33,12 +33,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// routes
-app.use('/api/auth', authRouter);
-app.use('/api/canvas', apiCanvas);
-app.use('/api/member', apiMember);
-app.use('/api/ingame', ingameRouter);
-
 app.use(session({
     resave: false,
     saveUninitialized: false,
@@ -53,6 +47,14 @@ app.use(session({
 // Auth 초기화 - express-session에 의존하므로 뒤에 위치시킴
 app.use(passport.initialize()); // req 객체에 passport 설정을 심음 (login, logout, isAuthenticated 등)
 app.use(passport.session()); // req.session 객체에 passport정보를 추가
+
+// routes
+app.use('/api/auth', authRouter);
+app.use('/api/canvas', apiCanvas);
+app.use('/api/member', apiMember);
+app.use('/api/ingame', ingameRouter);
+
+
 
 // 정적 data 제공 - react에서 자체적으로 정적 data제공하나 임시로 남겨둠. 추후 불필요시 삭제 가능할듯.
 app.use("/public", isLoggedIn, express.static(__dirname + "/public"));
