@@ -144,18 +144,18 @@ ioServer.on("connection", (socket) => {
 
     socket.on("new_message", (msg, room, done) => {
         // console.log("__debug 1 ", here);
-        console.log(socket.nickname);
+        // console.log(socket.nickname);
         socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`);
         done();
     });
 
-    console.log(`A client has connected (id: ${socket.id})`);
+    // console.log(`A client has connected (id: ${socket.id})`);
         if (!(socket.id in connectedClient)) {
             connectedClient[socket.id] = {};
     } // client 관리용
 
     socket.on('disconnect', () => {
-        console.log(`Client disconnected (id: ${socket.id})`);
+        // console.log(`Client disconnected (id: ${socket.id})`);
         delete connectedClient[socket.id];
     }); // client 관리용
 

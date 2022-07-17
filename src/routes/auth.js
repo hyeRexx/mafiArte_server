@@ -7,6 +7,43 @@ const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
 setAuth();
 
+/* hyeRexx : join */
+router.post('/user/join', async (req, res) => {
+    const joinInfo = req.body;
+    // const sql = 'SELECT userid FROM STD248.USER where userid'
+    const userInfoCheck = await dbpool.query("\
+        SELECT userid FROM STD248.USER where userid = ?;\
+        SELECT userid FROM STD248.USER where nickname = ?;\
+        SELECT userid FROM STD248.USER where email = ?;"
+        ,[joinInfo.id, joinInfo.nickname, joinInfo.email]);
+    const [[idCheck], [nickCheck], [emailCheck]] = userInfoCheck[0]
+    
+    let [id, nick, email] = [true, true, true]
+    if (idCheck) {id = false}
+    if (nickCheck) {nick = false}
+    if (emailCheck) {email = false}
+
+    if (id && nick && email) {
+        console.log("join process in")
+        const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email)\
+        values (?, ?, ?, ?);", [joinInfo.id, joinInfo.pass, joinInfo.nickname, joinInfo.email])
+        res.send({
+            result : 1
+        })
+    } else {
+        console.log("join process fail")
+        res.send({
+            result : 0,
+            idCheck: id,
+            nickCheck: nick,
+            emailCheck: email
+        });
+    }
+
+})
+
+/* hyeRexx : END */
+
 // login 요청
 router.post('/login', isNotLoggedIn, (req, res, next) => {
   // 'local'로 되어있기 때문에 local strategy가 실행된 뒤 done이 호출되면 결과값이 여기 인자로 들어옴
