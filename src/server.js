@@ -1,5 +1,4 @@
 import express from "express";
-// import WebSocket, { WebSocketServer } from "ws"; // 불필요로 주석처리. 이후 삭제 가능
 import http from "http";
 import createError from 'http-errors';
 import cors from 'cors';
