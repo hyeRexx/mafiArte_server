@@ -6,10 +6,11 @@ import cookieParser from 'cookie-parser';
 import {Server} from "socket.io";
 import {instrument} from "@socket.io/admin-ui";
 import cors from 'cors';
-import dbpool from './lib/db'
+import dbpool from './lib/db';
+import { userInfo } from "os";
 
 // 라우터 임포트
-const usersRouter = require('./routes/users');
+const authRouter = require('./routes/auth');
 
 const app = express(); // app = express instance
 
@@ -36,7 +37,9 @@ app.use("/public", express.static(__dirname + "/public"));
 // 라우팅
 app.get("/", (_, res) => res.render("index.html")); // 메인 페이지에 대해선 aws cloudfront를 통해 제공할 예정이라 추후 불필요시 삭제 가능
 // app.get("/*", (_, res) => res.redirect("/")); // 잘못된 주소 접근 관련 처리 따로 함으로 주석처리함. 이후 삭제 가능.
-app.use('/users', usersRouter);
+
+
+app.use('/api/auth', authRouter);
 
 // 잘못된 주소로 접근했을 경우 에러처리 (에러발생 및 핸들러)
 app.use(function(req, res, next) {
@@ -124,18 +127,18 @@ ioServer.on("connection", (socket) => {
 
     socket.on("new_message", (msg, room, done) => {
         // console.log("__debug 1 ", here);
-        console.log(socket.nickname);
+        // console.log(socket.nickname);
         socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`);
         done();
     });
 
-    console.log(`A client has connected (id: ${socket.id})`);
+    // console.log(`A client has connected (id: ${socket.id})`);
         if (!(socket.id in connectedClient)) {
             connectedClient[socket.id] = {};
     } // client 관리용
 
     socket.on('disconnect', () => {
-        console.log(`Client disconnected (id: ${socket.id})`);
+        // console.log(`Client disconnected (id: ${socket.id})`);
         delete connectedClient[socket.id];
     }); // client 관리용
 
