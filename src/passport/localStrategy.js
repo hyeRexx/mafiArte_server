@@ -24,7 +24,7 @@ const localStrategy = () => {
                     // 입력된 id가 유효한지 db에서 찾아보고
                     const [[signed]] = await dbpool.query('SELECT * FROM USER WHERE userid=?', userid);
                     if (signed) { // 유효하면
-                        const result = password === signed.pass;
+                        const result = password === signed.pass; // debugging - test용 임시. 회원가입 암호화 완료시 아래꺼로 대체.
                         // const result = await bcrypt.compare(password, signed.pass);// 비밀번호 일치하는지 확인하고
                         if (result) { // 일치하면 해당 회원정보를 route쪽으로 넘겨주고
                             done(null, signed);
