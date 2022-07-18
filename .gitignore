@@ -4,3 +4,4 @@ package-lock.json
 /src/sessionConfig.js
 /package.lock.json
 /yarn.lock.json
+/sessions
