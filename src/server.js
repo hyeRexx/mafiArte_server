@@ -15,9 +15,12 @@ import apiMember from './routes/member';
 import apiCanvas from './routes/canvas';
 import WebSocket from './routes/socket';
 import ingameRouter from './routes/ingame';
+import lobbyRouter from './routes/lobby';
 
 // 세션 저장소
 const FileStore = require('session-file-store')(session);
+
+export const userInfo = {}
 
 const app = express(); // app = express instance
 
@@ -53,6 +56,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/canvas', apiCanvas);
 app.use('/api/member', apiMember);
 app.use('/api/ingame', ingameRouter);
+app.use('/api/lobby', lobbyRouter);
 
 
 
