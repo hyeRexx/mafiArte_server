@@ -142,6 +142,8 @@ module.exports = (server) => {
         socket.on(socketEvent.DRAW_BEGIN_PATH, () => {
             connectedClient[socket.id].curr = null;
         });
+
+        // socket.on("")
     
     });
 }
