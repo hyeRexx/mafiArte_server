@@ -53,6 +53,7 @@ module.exports = (server) => {
         });
          // socket enterRoom event 이름 수정 확인 필요
         socket.on("enterRoom", (userId, socketId, roomNumber, done) => {
+            console.log(roomNumber);
             socket["userid"] = userId;
             socket.join(roomNumber); // room + debugging - roomName 변경필요 (자동으로 가능한 방으로 들어가도록)
             done();
@@ -108,7 +109,9 @@ module.exports = (server) => {
             // console.log("__debug 1 ", here);
             // console.log(socket.nickname);
             console.log(`RoomName2 : ${room}`);
+            console.log(`메시지 : ${msg}`);
             socket.to(room).emit("new_message", `socket: ${msg}`); //???
+            console.log(`RoomName3 : ${room}`);
             done();
         });
     
