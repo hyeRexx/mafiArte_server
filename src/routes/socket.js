@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { instrument } from "@socket.io/admin-ui";
 import socketEvent from '../socket-events';
+import {userInfo} from '../server.js'
 
 module.exports = (server) => {
     const ioServer = new Server(server, {
@@ -96,6 +97,13 @@ module.exports = (server) => {
             socket["nickname"] = nickname;
         });
         
+        socket.on('userinfo', (id) => {
+            userInfo[id].socketId =socket.id;
+            console.log(userInfo);
+        })
+
+        socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
+    
         socket.on("disconnect", () => {
             ioServer.sockets.emit("room_change", publicRooms());
         });
