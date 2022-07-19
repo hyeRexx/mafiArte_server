@@ -48,8 +48,9 @@ module.exports = (server) => {
             console.log("canvastest");
             socket.emit("canvasTest1", "성공");
         });
-    
+
         socket.on("enter_room", (roomName, id, done) => {
+            console.log(`enter room까지 성공 ${roomName}`);
             socket.join(roomName); // room
             done();
             socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName), id);
@@ -72,16 +73,18 @@ module.exports = (server) => {
             socket.rooms.forEach(room => socket.to(room).emit("bye", socket.nickname, countRoom(room) - 1));
         })
         
-        socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
-    
+        socket.on("nickname", (nickname) => {
+            socket["nickname"] = nickname;
+        });
+        
         socket.on("disconnect", () => {
             ioServer.sockets.emit("room_change", publicRooms());
         });
-    
+        
         socket.on("new_message", (msg, room, done) => {
             // console.log("__debug 1 ", here);
             console.log(socket.nickname);
-            socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`);
+            socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`); //???
             done();
         });
     
@@ -133,7 +136,11 @@ module.exports = (server) => {
                 },
                 color: client.curr.color,
                 thickness: client.curr.thickness,
-            }     
+            }  
+            
+            if (client.curr.color == '#ffffff') {
+                currdata.thickness = 30;
+            }
     
             socket.to(data.name).emit(socketEvent.DRAW, currdata);
             socket.emit(socketEvent.DRAW, currdata);
