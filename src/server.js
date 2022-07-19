@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import io from "socket.io"
 import createError from 'http-errors';
 import cors from 'cors';
 import session from 'express-session';
@@ -51,6 +52,7 @@ app.use(session({
         secure: false,
     },
 }));
+
 
 // Auth 초기화 - express-session에 의존하므로 뒤에 위치시킴
 app.use(passport.initialize()); // req 객체에 passport 설정을 심음 (login, logout, isAuthenticated 등)
