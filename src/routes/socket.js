@@ -46,16 +46,19 @@ module.exports = (server) => {
             console.log("canvastest");
             socket.emit("canvasTest1", "성공");
         });
-    
         socket.on("checkEnterableRoom", done => {
             const roomNumber = 0; // debugging - 추후 자동 생성되도록 수정 필요. 임시로 그냥 0 넣음
             done(roomNumber);
         });
-
+         // socket enterRoom event 이름 수정 확인 필요
         socket.on("enterRoom", (userId, socketId, roomNumber, done) => {
             socket["userid"] = userId;
             socket.join(roomNumber); // room + debugging - roomName 변경필요 (자동으로 가능한 방으로 들어가도록)
             socket.room = roomNumber;
+         // 해인이꺼
+        socket.on("enter_room", (roomName, id, done) => {
+            console.log(`enter room까지 성공 ${roomName}`);
+            socket.join(roomName); // room
             done();
             socket.to(roomNumber).emit("welcome", roomNumber, countRoom(roomNumber), userId, socketId);
             // ioServer.sockets.emit("room_change", publicRooms());
@@ -89,16 +92,18 @@ module.exports = (server) => {
             });
         });
         
-        socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
-    
+        socket.on("nickname", (nickname) => {
+            socket["nickname"] = nickname;
+        });
+        
         socket.on("disconnect", () => {
             ioServer.sockets.emit("room_change", publicRooms());
         });
-    
+        
         socket.on("new_message", (msg, room, done) => {
             // console.log("__debug 1 ", here);
             console.log(socket.nickname);
-            socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`);
+            socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`); //???
             done();
         });
     
@@ -150,7 +155,11 @@ module.exports = (server) => {
                 },
                 color: client.curr.color,
                 thickness: client.curr.thickness,
-            }     
+            }  
+            
+            if (client.curr.color == '#ffffff') {
+                currdata.thickness = 30;
+            }
     
             socket.to(data.name).emit(socketEvent.DRAW, currdata);
             socket.emit(socketEvent.DRAW, currdata);
