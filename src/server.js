@@ -17,10 +17,12 @@ import WebSocket from './routes/socket';
 import ingameRouter from './routes/ingame';
 import lobbyRouter from './routes/lobby';
 
+
 // 세션 저장소
 const FileStore = require('session-file-store')(session);
 
 export const userInfo = {}
+
 
 const app = express(); // app = express instance
 
@@ -35,6 +37,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// 세션 저장소
+const FileStore = require('session-file-store')(session);
 
 app.use(session({
     resave: false,
@@ -57,7 +62,6 @@ app.use('/api/canvas', apiCanvas);
 app.use('/api/member', apiMember);
 app.use('/api/ingame', ingameRouter);
 app.use('/api/lobby', lobbyRouter);
-
 
 
 // 정적 data 제공 - react에서 자체적으로 정적 data제공하나 임시로 남겨둠. 추후 불필요시 삭제 가능할듯.

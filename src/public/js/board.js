@@ -102,6 +102,9 @@ class Whiteboard {
             thickness,
         }
 
+        // data.color = '#f0e73a';
+        // data.thickness = 20;
+
         // Emit drawing data to other people
         socket.emit(socketEvents.DRAW, data);
 
