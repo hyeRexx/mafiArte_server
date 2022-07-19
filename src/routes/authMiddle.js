@@ -16,7 +16,6 @@ exports.isNotLoggedIn = (req, res, next) => {
         // 로그인 되어있지 않아야 하기 때문에 그냥 로그아웃 처리 해버림
         req.logout((err) => {
             if (err) {return next(err)}
-            req.session.destroy();
           });
     }
     next();
