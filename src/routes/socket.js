@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { instrument } from "@socket.io/admin-ui";
 import socketEvent from '../socket-events';
+import {userInfo} from '../server.js'
 
 module.exports = (server) => {
     const ioServer = new Server(server, {
@@ -33,61 +34,87 @@ module.exports = (server) => {
     }
     
     ioServer.on("connection", (socket) => {
-        socket["nickname"] = "Anon";
-    
-        socket.onAny((event) => {
-            // console.log(`Socket event : ${event}`);
-        });
+        // socket.onAny((event) => {
+        //     // console.log(`Socket event : ${event}`);
+        // });
 
-        socket.on("test", () => {
-            console.log("test 성공 ㅎㅎ");
-            socket.emit("test", "성공");
-        });
+        // socket.on("test", () => {
+        //     console.log("test 성공 ㅎㅎ");
+        //     socket.emit("test", "성공");
+        // });
 
         socket.on("canvasTest", () => {
             console.log("canvastest");
             socket.emit("canvasTest1", "성공");
         });
-    
-        socket.on("enter_room", (roomName, id, done) => {
-            socket.join(roomName); // room
+        socket.on("checkEnterableRoom", done => {
+            const roomNumber = 0; // debugging - 추후 자동 생성되도록 수정 필요. 임시로 그냥 0 넣음
+            done(roomNumber);
+        });
+         // socket enterRoom event 이름 수정 확인 필요
+        socket.on("enterRoom", (userId, socketId, roomNumber, done) => {
+            socket["userid"] = userId;
+            socket.join(roomNumber); // room + debugging - roomName 변경필요 (자동으로 가능한 방으로 들어가도록)
             done();
-            socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName), id);
-            ioServer.sockets.emit("room_change", publicRooms());
+            socket.to(roomNumber).emit("welcome", roomNumber, countRoom(roomNumber), userId, socketId);
+            socket.room = roomNumber;
+        });
+
+
+        socket.on("offer", async (offer, offersSocket, newbieSocket, offersId) => {
+            console.log("new offer received");
+            socket.to(newbieSocket).emit("offer", offer, offersSocket, offersId);
         });
     
-        socket.on("offer", (offer, room, newbieID, offersId) => {
-            socket.to(newbieID).emit("offer", offer, offersId);
+        socket.on("answer", (answer, offersSocket, newbieId) => {
+            socket.to(offersSocket).emit("answer", answer, newbieId);
         });
     
-        socket.on("answer", (answer, offersId, newbieId) => {
-            socket.to(offersId).emit("answer", answer, newbieId);
-        });
-    
-        socket.on("ice", (ice, room, othersId, myId) => {
-            socket.to(othersId).emit("ice", ice, myId);
+        socket.on("ice", (ice, sendersId, othersSocket) => {
+            socket.to(othersSocket).emit("ice", ice, sendersId);
         });
         
+        socket.on("exit", () => {
+            console.log("someone exiting", socket.userid, socket.room);
+            socket.to(socket.room).emit("roomExit", socket.userid);
+            socket.leave(socket.room);
+            socket.room = null;
+        });
+
         socket.on("disconnecting", () => {
-            socket.rooms.forEach(room => socket.to(room).emit("bye", socket.nickname, countRoom(room) - 1));
-        })
+            console.log("someone disconnecting");
+            socket.rooms.forEach(room => {
+                socket.to(room).emit("roomExit", socket.userid);
+                room != socket.id && socket.leave(room);
+            });
+        });
         
+        socket.on("nickname", (nickname) => {
+            socket["nickname"] = nickname;
+        });
+        
+        socket.on('userinfo', (id) => {
+            userInfo[id].socketId =socket.id;
+            console.log(userInfo);
+        })
+
         socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
     
         socket.on("disconnect", () => {
             ioServer.sockets.emit("room_change", publicRooms());
         });
-    
+        
         socket.on("new_message", (msg, room, done) => {
             // console.log("__debug 1 ", here);
-            console.log(socket.nickname);
-            socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`);
+            // console.log(socket.nickname);
+            console.log(`RoomName2 : ${room}`);
+            socket.to(room).emit("new_message", `socket: ${msg}`); //???
             done();
         });
     
         console.log(`A client has connected (id: ${socket.id})`);
-            if (!(socket.id in connectedClient)) {
-                connectedClient[socket.id] = {};
+        if (!(socket.id in connectedClient)) {
+            connectedClient[socket.id] = {};
         } // client 관리용
     
         socket.on('disconnect', () => {
@@ -133,7 +160,11 @@ module.exports = (server) => {
                 },
                 color: client.curr.color,
                 thickness: client.curr.thickness,
-            }     
+            }  
+            
+            if (client.curr.color == '#ffffff') {
+                currdata.thickness = 30;
+            }
     
             socket.to(data.name).emit(socketEvent.DRAW, currdata);
             socket.emit(socketEvent.DRAW, currdata);
@@ -142,6 +173,8 @@ module.exports = (server) => {
         socket.on(socketEvent.DRAW_BEGIN_PATH, () => {
             connectedClient[socket.id].curr = null;
         });
+
+        // socket.on("")
     
     });
 }

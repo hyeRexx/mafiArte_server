@@ -1,6 +1,7 @@
 const passport = require('passport');
 const local = require('./localStrategy');
 const dbpool = require('../lib/db');
+import {userInfo} from '../server.js'
 
 module.exports = () => {
     /*
@@ -16,6 +17,10 @@ module.exports = () => {
 
     // 로그인 이후 접근시 session()을 통해 매번 실행되며 로그인한 회원의 req.user에 유저정보를 복구함
     passport.deserializeUser(async (id, done) => {
+        if (!userInfo[id]) {
+            userInfo[id] = {userid : id};
+        }
+        console.log("passport test!")
         dbpool.query('SELECT * FROM USER WHERE userid=?', id).then(user => done(null, user)).catch(err => done(err));
     });
 

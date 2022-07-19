@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import io from "socket.io"
 import createError from 'http-errors';
 import cors from 'cors';
 import session from 'express-session';
@@ -15,9 +16,11 @@ import apiMember from './routes/member';
 import apiCanvas from './routes/canvas';
 import WebSocket from './routes/socket';
 import ingameRouter from './routes/ingame';
+import lobbyRouter from './routes/lobby';
 
-// 세션 저장소
-const FileStore = require('session-file-store')(session);
+
+export const userInfo = {}
+
 
 const app = express(); // app = express instance
 
@@ -33,6 +36,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+// 세션 저장소
+const FileStore = require('session-file-store')(session);
+
 app.use(session({
     resave: false,
     saveUninitialized: false,
@@ -44,6 +50,7 @@ app.use(session({
     },
 }));
 
+
 // Auth 초기화 - express-session에 의존하므로 뒤에 위치시킴
 app.use(passport.initialize()); // req 객체에 passport 설정을 심음 (login, logout, isAuthenticated 등)
 app.use(passport.session()); // req.session 객체에 passport정보를 추가
@@ -53,7 +60,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/canvas', apiCanvas);
 app.use('/api/member', apiMember);
 app.use('/api/ingame', ingameRouter);
-
+app.use('/api/lobby', lobbyRouter);
 
 
 // 정적 data 제공 - react에서 자체적으로 정적 data제공하나 임시로 남겨둠. 추후 불필요시 삭제 가능할듯.
