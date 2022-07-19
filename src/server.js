@@ -19,9 +19,6 @@ import ingameRouter from './routes/ingame';
 import lobbyRouter from './routes/lobby';
 
 
-// 세션 저장소
-const FileStore = require('session-file-store')(session);
-
 export const userInfo = {}
 
 

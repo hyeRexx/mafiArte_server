@@ -55,15 +55,11 @@ module.exports = (server) => {
         socket.on("enterRoom", (userId, socketId, roomNumber, done) => {
             socket["userid"] = userId;
             socket.join(roomNumber); // room + debugging - roomName 변경필요 (자동으로 가능한 방으로 들어가도록)
-            socket.room = roomNumber;
-         // 해인이꺼
-        socket.on("enter_room", (roomName, id, done) => {
-            console.log(`enter room까지 성공 ${roomName}`);
-            socket.join(roomName); // room
             done();
             socket.to(roomNumber).emit("welcome", roomNumber, countRoom(roomNumber), userId, socketId);
-            // ioServer.sockets.emit("room_change", publicRooms());
+            socket.room = roomNumber;
         });
+
 
         socket.on("offer", async (offer, offersSocket, newbieSocket, offersId) => {
             console.log("new offer received");
@@ -110,8 +106,9 @@ module.exports = (server) => {
         
         socket.on("new_message", (msg, room, done) => {
             // console.log("__debug 1 ", here);
-            console.log(socket.nickname);
-            socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`); //???
+            // console.log(socket.nickname);
+            console.log(`RoomName2 : ${room}`);
+            socket.to(room).emit("new_message", `socket: ${msg}`); //???
             done();
         });
     
