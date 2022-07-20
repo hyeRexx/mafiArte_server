@@ -1,9 +1,7 @@
 import express from "express";
 const router = express.Router();
 const dbpool = require('../lib/db');
-
 import {userInfo} from '../server.js';
-
 
 router.get("/userimg", async(req, res) => {
     try {

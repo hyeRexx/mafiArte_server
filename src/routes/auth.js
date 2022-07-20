@@ -75,7 +75,6 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
         userInfo[user.userid] = {userId: user.userid};
       }
     }
-
       return res.send('success');
     });
   })(req, res, next); // authenticate의 인자로 req, res, next 전달 위해 붙여줌

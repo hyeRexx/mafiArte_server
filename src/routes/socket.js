@@ -38,19 +38,25 @@ module.exports = (server) => {
     
     ioServer.on("connection", (socket) => {
 
+        socket.onAny((event) => {
+            console.log(`socket의 id : ${socket.id}`)
+            // console.log(`Socket event : ${event}`);
+        });
+
         socket.on('loginoutAlert', (userId, status) => {
             console.log('loginoutAlert', userId, status);
             socket.broadcast.emit("friendList", userId, status);
         })
 
         socket.on("checkEnterableRoom", done => {
-            const roomId = Date.now();
-            done(roomId); // >> emit.checkEnterableRoom으로 roomId 보냄
+            const roomId = + new Date();
+            done(roomId);
         });
-
-        // socket enterRoom event 이름 수정 확인 필요
-        socket.on("enterRoom", (userId, socketId, roomId, done) => {
         
+         // socket enterRoom event 이름 수정 확인 필요
+        socket.on("enterRoom", (userId, socketId, roomId, done) => {
+            console.log(`enterRoom의 ${roomId}`);
+
             socket["userid"] = userId;
             socket.join(roomId);
             
@@ -58,7 +64,6 @@ module.exports = (server) => {
             socket.to(roomId).emit("welcome", roomId, countRoom(roomId), userId, socketId);
             socket.room = roomId;
         });
-
 
         socket.on("offer", async (offer, offersSocket, newbieSocket, offersId) => {
             console.log("new offer received");
@@ -91,7 +96,7 @@ module.exports = (server) => {
         socket.on("nickname", (nickname) => {
             socket["nickname"] = nickname;
         });
-        
+
         socket.on('userinfo', (id) => {
             const user = userInfo[id];
             user["socket"] = socket.id;
@@ -121,7 +126,38 @@ module.exports = (server) => {
             console.log(`Client disconnected (id: ${socket.id})`);
             delete connectedClient[socket.id];
         }); // client 관리용
-    
+
+        // 여러 명의 socketId 반환
+        socket.on('listuserinfo', (listuserid) => {
+
+            console.log(`listuserid 리스트 ${listuserid}`);
+            console.log(`userInfo는 무엇 ? ${userInfo}`);
+            console.log(`userInfo 상세? ${userInfo[listuserid[0]]}`);
+
+            let listsocketid = new Array();
+            // ${userInfo[id]["socket"]["id"]}
+            for (var i = 0; i < listuserid.length; i++) {
+                console.log(`유저의 socket id ${userInfo[listuserid[i]]["socket"]}`);
+                listsocketid.push(userInfo[listuserid[i]]["socket"]);
+            }
+
+            console.log(`socketid 리스트 ${listsocketid}`);
+            
+            // 초대하고 싶은 사람 리스트 반환
+            socket.emit("listsocketid", listsocketid);
+        });
+
+        // 초대 보내기
+        socket.on("sendinvite",(listsocketid, roomId, myId, done) => {
+            console.log(`초대 보내기 socket id ${listsocketid}`);
+            for (var i = 0; i < listsocketid.length; i++) {
+                console.log(`초대하는 socket id ${listsocketid[i]}`);
+                ioServer.to(listsocketid[i]).emit("getinvite", roomId, myId);
+            }
+            // HOST가 방으로 이동
+            done(roomId);
+        });
+
         // canvas add
         socket.on(socketEvent.DRAW, (data) => {
             const {
