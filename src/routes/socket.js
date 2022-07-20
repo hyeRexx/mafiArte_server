@@ -34,14 +34,11 @@ module.exports = (server) => {
     }
     
     ioServer.on("connection", (socket) => {
-        // socket.onAny((event) => {
-        //     // console.log(`Socket event : ${event}`);
-        // });
 
-        // socket.on("test", () => {
-        //     console.log("test 성공 ㅎㅎ");
-        //     socket.emit("test", "성공");
-        // });
+        socket.on('loginoutAlert', (userId, status) => {
+            console.log('loginoutAlert', userId, status);
+            socket.broadcast.emit("friendList", userId, status);
+        })
 
         socket.on("canvasTest", () => {
             console.log("canvastest");
@@ -95,8 +92,10 @@ module.exports = (server) => {
         });
         
         socket.on('userinfo', (id) => {
-            userInfo[id].socketId =socket.id;
-            console.log(userInfo);
+            const user = userInfo[id];
+            user["socket"] = socket.id;
+            socket["userId"] = id;
+            // console.log(userInfo);
         })
 
         socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
