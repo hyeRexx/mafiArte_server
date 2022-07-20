@@ -10,7 +10,7 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"],
+            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net", "http://localhost:3001"],
             credentials: true
         },
     });
@@ -132,7 +132,7 @@ module.exports = (server) => {
 
             console.log(`listuserid 리스트 ${listuserid}`);
             console.log(`userInfo는 무엇 ? ${userInfo}`);
-            console.log(`userInfo 상세? ${userInfo[listuserid[0]]}`);
+            console.log(`userInfo 상세? ${userInfo[listuserid[0]]["socket"]}`);
 
             let listsocketid = new Array();
             // ${userInfo[id]["socket"]["id"]}
