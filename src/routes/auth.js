@@ -5,6 +5,10 @@ const setAuth = require('../passport/index');
 const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
+
+import {userInfo} from '../server';
+import {createHashedPassword} from '../passport/salted'
+
 setAuth();
 
 /* hyeRexx : join */
@@ -23,10 +27,12 @@ router.post('/user/join', async (req, res) => {
     if (nickCheck) {nick = false}
     if (emailCheck) {email = false}
 
+    const {saltedPass, salt} = await createHashedPassword(joinInfo.pass);
+
     if (id && nick && email) {
         console.log("join process in")
-        const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email)\
-        values (?, ?, ?, ?);", [joinInfo.id, joinInfo.pass, joinInfo.nickname, joinInfo.email])
+        const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email, salt)\
+        values (?, ?, ?, ?, ?);", [joinInfo.id, saltedPass, joinInfo.nickname, joinInfo.email, salt])
         res.send({
             result : 1
         })
@@ -65,6 +71,10 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
         console.error(loginError);
         return next(loginError);
       }
+      if (!userInfo[user.userid]) {
+        userInfo[user.userid] = {userId: user.userid};
+        console.log(userInfo);
+    }
       return res.send('success');
     });
   })(req, res, next); // authenticate의 인자로 req, res, next 전달 위해 붙여줌

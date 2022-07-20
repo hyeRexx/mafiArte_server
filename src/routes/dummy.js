@@ -26,8 +26,19 @@ user[1]['extra'] = 33
 console.log(user)
 
 user[1]['extra'] = 44
+
+user[2] = {id : 2, pass : 2};
+user[3] = {id : 3, pass : 3};
 console.log(user)
 
-user[5]
-user[5]['extra'] = 77
-console.log(user)
+// dummy.forEach(dum => {
+//     console.log(dum);
+// });
+
+Object.keys(user).forEach((id) => {
+    console.log(id)
+});
+
+// for (const property in dummy) {
+//     console.log(property);
+// }

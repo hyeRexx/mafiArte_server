@@ -93,11 +93,7 @@ module.exports = (server) => {
         });
         
         socket.on('userinfo', (id) => {
-            // userInfo[id].socketId = socket.id;
-            user = userInfo[id];
-            user["socket"] = socket; // hyeRexx added
-            socket["userid"] = id;
-            console.log(userInfo);
+            socket["userId"] = id;
         })
 
         socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
@@ -170,32 +166,41 @@ module.exports = (server) => {
 
         // request from a host player in the lobby
         // need client!
-        socket.on("makeGame", (data) => {
+        socket.on("makeGame", (data, done) => {
             let user = userInfo[data.userId];
-
             games[data.gameId] = new Game(data.gameId);
-            games[data.gameId].joinGame(user)
+            games[data.gameId].joinGame(user, socket);
+            socket.join(data.gameId);
+            console.log("debug__ : games object :", games);
+            done(data.gameId);
         }) 
 
         // request from a general players in the lobby 
         // need client!
-        socket.on("joinGame", (data) => {
+        socket.on("joinGame", (data, done) => {
             let user = userInfo[data.userId];
-
+            let thisGameId;
             // 랜덤 입장 요청 : from START btn.
             if (data.gameId === 0) {
                 Object.keys(games).forEach((id) => {
+                    console.log("iterate in");
                     if (games[id].joinable) {
-                        user.socket.join(games[id].gameId);
-                        games[id].joinGame(user);
+                        console.log("debug__ : iterate games :", games[id]);
+                        socket.join(games[id].gameId);
+                        games[id].joinGame(user, socket);
+                        thisGameId = games[id].gameId;
                         return false;
                     }
                 });
 
             // 일반 입장 요청 : from invitation ACCEPT btn.
             } else {
-                games[data.gameId].joinGame(user);
+                games[data.gameId].joinGame(user,socket);
+                thisGameId = data.gameId;
+                socket.join(data.gameId);
             }
+
+            done(thisGameId);
         });
 
         // request for generalPlayer
@@ -208,11 +213,12 @@ module.exports = (server) => {
         
         // request for start game from client, host!
         // need client!
-        socket.on("startupRequest", (data) => {
+        socket.on("startupRequest", (data, done) => {
             let game = games[data.gameId];
 
             if (game.host === data.userId) {        
                 game.startGame();
+                done();
             }
         }); 
 
