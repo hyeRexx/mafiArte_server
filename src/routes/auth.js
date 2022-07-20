@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-const setAuth = require('../passport/index');
 const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
-setAuth();
+var crypto = require('crypto');
+import {userInfo} from '../server';
 
 /* hyeRexx : join */
 router.post('/user/join', async (req, res) => {
@@ -64,6 +64,9 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
       if (loginError) {
         console.error(loginError);
         return next(loginError);
+      }
+      if (!userInfo[user.userid]) {
+        userInfo[user.userid] = {userId: user.userid};
       }
       return res.send('success');
     });

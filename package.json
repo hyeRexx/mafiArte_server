@@ -1,8 +1,8 @@
 {
-  "name": "zoom_clone",
+  "name": "mafiarte",
   "version": "1.0.0",
-  "description": "Zoom Clone using WebRTC and Websockets : hyeRexx",
-  "license": "hyeRexx",
+  "description": "Jungle Namanmoo Project : Mafiarte",
+  "license": "std248",
   "devDependencies": {
     "@babel/cli": "^7.18.6",
     "@babel/core": "^7.18.6",

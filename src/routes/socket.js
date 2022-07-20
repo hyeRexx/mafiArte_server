@@ -6,7 +6,7 @@ import {userInfo} from '../server.js'
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            origin: ["https://admin.socket.io", "http://localhost:3001"],
+            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"],
             credentials: true
         },
     });
@@ -94,9 +94,10 @@ module.exports = (server) => {
         });
         
         socket.on('userinfo', (id) => {
-            userInfo[id].socketId =socket.id;
-            console.log(userInfo);
-        })
+            const user = userInfo[id];
+            user["socket"] = socket; // hyeRexx added
+            socket["userId"] = id;
+        });
 
         socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
     
