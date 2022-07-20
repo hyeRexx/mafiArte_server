@@ -38,19 +38,19 @@ module.exports = (server) => {
     
     ioServer.on("connection", (socket) => {
 
-        socket.on("canvasTest", () => {
-            console.log("canvastest");
-            socket.emit("canvasTest1", "성공");
-        });
-
+        socket.on('loginoutAlert', (userId, status) => {
+            console.log('loginoutAlert', userId, status);
+            socket.broadcast.emit("friendList", userId, status);
+        })
 
         socket.on("checkEnterableRoom", done => {
             const roomId = Date.now();
             done(roomId); // >> emit.checkEnterableRoom으로 roomId 보냄
         });
-        
+
         // socket enterRoom event 이름 수정 확인 필요
         socket.on("enterRoom", (userId, socketId, roomId, done) => {
+        
             socket["userid"] = userId;
             socket.join(roomId);
             
@@ -93,6 +93,8 @@ module.exports = (server) => {
         });
         
         socket.on('userinfo', (id) => {
+            const user = userInfo[id];
+            user["socket"] = socket.id;
             socket["userId"] = id;
         })
 
@@ -103,10 +105,10 @@ module.exports = (server) => {
         });
         
         socket.on("new_message", (msg, room, done) => {
-            // console.log("__debug 1 ", here);
-            // console.log(socket.nickname);
+            console.log(`메시지 : ${msg}`);
             console.log(`roomId2 : ${room}`);
             socket.to(room).emit("new_message", `socket: ${msg}`); //???
+            console.log(`RoomName3 : ${room}`);
             done();
         });
     

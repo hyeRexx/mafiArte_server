@@ -13,5 +13,5 @@ router.get('/video', async function(req, res, next) {
       res.send('에러!');
     }
 });
-  
+
 module.exports = router;
