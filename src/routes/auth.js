@@ -4,8 +4,9 @@ const passport = require('passport');
 const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
-var crypto = require('crypto');
+
 import {userInfo} from '../server';
+// import {createHashedPassword} from '../passport/salted'
 
 /* hyeRexx : join */
 router.post('/user/join', async (req, res) => {
@@ -23,9 +24,11 @@ router.post('/user/join', async (req, res) => {
     if (nickCheck) {nick = false}
     if (emailCheck) {email = false}
 
+    // const {saltedPass, salt} = await createHashedPassword(joinInfo.pass);
+
     if (id && nick && email) {
         console.log("join process in")
-        const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email)\
+        const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email, salt)\
         values (?, ?, ?, ?);", [joinInfo.id, joinInfo.pass, joinInfo.nickname, joinInfo.email])
         res.send({
             result : 1
@@ -68,6 +71,8 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
       if (!userInfo[user.userid]) {
         userInfo[user.userid] = {userId: user.userid};
       }
+    }
+
       return res.send('success');
     });
   })(req, res, next); // authenticate의 인자로 req, res, next 전달 위해 붙여줌
@@ -76,6 +81,7 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
 // logout 요청
 router.post('/logout', isLoggedIn, (req, res, next) => {
   // 로그아웃 처리 및 세션 destroy
+  // console.log("testest",req.user);
   req.logout((err) => {
     if (err) {return next(err)}
     req.session.destroy();

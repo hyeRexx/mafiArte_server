@@ -22,7 +22,7 @@ import ingameRouter from './routes/ingame';
 import lobbyRouter from './routes/lobby';
 
 
-export const userInfo = {}
+export let userInfo = {}
 
 
 const app = express(); // app = express instance
