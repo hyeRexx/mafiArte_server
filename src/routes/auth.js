@@ -7,7 +7,7 @@ const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
 
 import {userInfo} from '../server';
-import {createHashedPassword} from '../passport/salted'
+// import {createHashedPassword} from '../passport/salted'
 
 setAuth();
 
@@ -27,12 +27,12 @@ router.post('/user/join', async (req, res) => {
     if (nickCheck) {nick = false}
     if (emailCheck) {email = false}
 
-    const {saltedPass, salt} = await createHashedPassword(joinInfo.pass);
+    // const {saltedPass, salt} = await createHashedPassword(joinInfo.pass);
 
     if (id && nick && email) {
         console.log("join process in")
         const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email, salt)\
-        values (?, ?, ?, ?, ?);", [joinInfo.id, saltedPass, joinInfo.nickname, joinInfo.email, salt])
+        values (?, ?, ?, ?);", [joinInfo.id, joinInfo.pass, joinInfo.nickname, joinInfo.email])
         res.send({
             result : 1
         })
