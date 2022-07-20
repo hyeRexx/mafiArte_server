@@ -1,19 +1,14 @@
+import {userInfo} from '../server.js'
 
-// const socket = io();
-
-class Game {
+export default class Game {
     // 게임 생성
-    constructor(gameId, socket) {
+    constructor(gameId) {
         // gameId는 timestamp로, host는 maker로 정함
         // max player, maxPlayer 변경 방지
         // defineProperty로 game id 설정
         // let descriptor = Object.getOwnPropertyDescriptor(obj, propertyName);
-        Object.defineProperties(this, {
-            gameId : {value : gameId, writable : false}, // 게임 식별 정보
-            maxPlayer : {value : 8, writable : false},   // 게임에 참가 가능한 최대 인원
-        });
-
-        this.socket = socket;   // 소켓서버
+        this.maxCnt = 8;
+        this.gameId = gameId;
         this.socketAll = [];    // 게임 플레이어들의 소켓 정보 배열
         this.joinable = true;   // 게임 접근 가능 여부
         this.playerCnt = 0;     // 게임 플레이어 수 (max 파악용)
@@ -33,42 +28,31 @@ class Game {
 
         this.voteRst = null;    // 시민 투표에서 선출된 사람
         this.guessRst = false;   // 마피아 정답 결과 (boolean)
-
-        this.socket.on("notifySelf", (user) => this.joinGame(user)); // socket.join(room)
-        this.socket.on("startupRequest", () => this.startGame()); // 게임 시작 요청
-        this.socket.on("openTurn", () => this.changePlayer()); // 턴 교체 요청
-        this.socket.on("nightEvent", (user) => this.nightWork(user)); // 나잇 이벤트
-        this.socket.on("newCycleRequest", () => this.openNewCycle()); // 새로운 사이클 요청
-    }
-
-    // for test
-    onAll(msg, data) {
-        return 0
     }
 
     // 방 전체에 이벤트 전송
     emitAll(msg, data) {
-        this.socketAll.forEach(sock => {
-            this.socket.to(sock).emit(msg, data);
-        })
+        // this.socketAll.forEach(socket => {
+        //     socket.emit(msg, data);
+        // })
 
         // for test
-        // console.log("emit event\nmsg :", msg, "\ndata :", data)
+        console.log("**GAME** emit event\nmsg :", msg, "\ndata :", data)
     }
 
-    // 게임 host 세팅 : player Arr의 첫 번째 유저 (입장 순서 정렬)
+    // 게임 host 세팅 : player Arr의 첫 번째 유저 (입장 rs순서 정렬)
     setHost() {
         this.host = this.player[0].userId;
     }
 
-    // 게임 입장 : user object에 추가 속성 부여 및 각 array에 push
-    joinGame(user) { 
-        user.state = false;     // 게임 in, user state 변경
 
-        user.ready = false;     // 인게임용 추가 속성 : 레디 정보
-        user.mafia = false;     // 인게임용 추가 속성 : 마피아 정보
-        user.servived = true;   // 인게임용 추가 속성 : 살았니 죽었니
-        user.votes = 0;         // 인게임용 추가 속성 : 득표 수 : 밤이되었습니다
+    // 게임 입장 : user object에 추가 속성 부여 및 각 array에 push
+    joinGame(user) {         
+        user['state'] = false;     // 게임 in, user state 변경
+        user['ready'] = false;     // 인게임용 추가 속성 : 레디 정보
+        user['mafia'] = false;     // 인게임용 추가 속성 : 마피아 정보
+        user['servived'] = true;   // 인게임용 추가 속성 : 살았니 죽었니
+        user['votes'] = 0;         // 인게임용 추가 속성 : 득표 수 : 밤이되었습니다
 
         this.player.push(user);
         this.turnQue.push(user.userId);
@@ -79,28 +63,25 @@ class Game {
         this.playerCnt == 1 ? this.setHost() : null; // 호스트 뽑기
 
         // 새로운 유저 입장 알림
-        this.emitAll("notifyNew", user.userId);
+        this.emitAll("notifyNew", user);
     }
 
 
     // 게임 레디 : 호스트가 아닌 일반 유저만 작동 가능
     // ready - cancle ready 한 번에 작동 (조건 분기 있음)
     // ready 버튼에 onclick으로 game.readyGame, event 유저의 userId 전달
-    readyGame(userId) {
-        let userIdx = this.player.findIndex(x => x.userId === userId)
-        let user = this.player[userIdx];
-
+    readyGame(user) {
         if (!user.ready) {
-            this.turnQue.push(userId);
+            this.turnQue.push(user.userId);
             user.ready = true;
         } else {
-            this.turnQue.splice(this.turnQue.findIndex(x => x.userId === userId), 1);
+            this.turnQue.splice(this.turnQue.findIndex(x => x === user.userId), 1);
             user.ready = false;
         }
 
         // 다른 유저들에게 ready 알림
         // this.socket.to(this.gamdId).emit("notifyReady", user.userId, user.ready);
-        this.emitAll("notifyReady", {user : user.userId, ready: user.ready})
+        this.emitAll("notifyReady", {userId : user.userId, isReady: user.ready})
 
         // 인원 조건 충족 + 마지막 ready 처리 되었을 때 readyToStart로 전달
         if (this.playerCnt > 3 && this.turnQue.length === this.playerCnt) {
@@ -264,36 +245,36 @@ class Game {
 
 }
 
-const user1 = { userId : '재관', socket : '1111user' };
-const user2 = { userId : '해인', socket : '2222user' };
-const user3 = { userId : '혜린', socket : '3333user' };
-const user4 = { userId : '진호', socket : '4444user' };
-const user5 = { userId : 'user5', socket : '5555user' };
-const user6 = { userId : 'user6', socket : '6666user' };
-const user7 = { userId : 'user7', socket : '7777user' };
-const user8 = { userId : 'user8', socket : '8888user' };
+// const user1 = { userId : '재관', socket : '1111user' };
+// const user2 = { userId : '해인', socket : '2222user' };
+// const user3 = { userId : '혜린', socket : '3333user' };
+// const user4 = { userId : '진호', socket : '4444user' };
+// const user5 = { userId : 'user5', socket : '5555user' };
+// const user6 = { userId : 'user6', socket : '6666user' };
+// const user7 = { userId : 'user7', socket : '7777user' };
+// const user8 = { userId : 'user8', socket : '8888user' };
 
-let game = new Game(Date.now());
+// let game = new Game(Date.now());
 
-console.log("\n\n----------------- new game! ------------------\n");
+// console.log("\n\n----------------- new game! ------------------\n");
 
-game.joinGame(user1);
-game.joinGame(user2);
-game.joinGame(user3);
-game.joinGame(user4);
+// game.joinGame(user1);
+// game.joinGame(user2);
+// game.joinGame(user3);
+// game.joinGame(user4);
 
-game.player.map(user => {game.readyGame(user.userId)})
+// game.player.map(user => {game.readyGame(user.userId)})
 
-// let now = game.startGame().playerNow.userId;
-// let next= game.startGame().playerNext.userId;
-console.log(game.startGame())
-console.log("host :", game.host, "\nmafia :", game.mafia)
-console.log("turn :", game.turnQue)
+// // let now = game.startGame().playerNow.userId;
+// // let next= game.startGame().playerNext.userId;
+// console.log(game.startGame())
+// console.log("host :", game.host, "\nmafia :", game.mafia)
+// console.log("turn :", game.turnQue)
 
-console.log(game.changePlayer());
-console.log(game.changePlayer());
-console.log(game.changePlayer());
-console.log(game.changePlayer());
+// console.log(game.changePlayer());
+// console.log(game.changePlayer());
+// console.log(game.changePlayer());
+// console.log(game.changePlayer());
 
 
 
