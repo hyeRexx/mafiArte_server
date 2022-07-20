@@ -5,6 +5,7 @@ const setAuth = require('../passport/index');
 const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
+import {userInfo} from '../server';
 setAuth();
 
 /* hyeRexx : join */
@@ -65,6 +66,10 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
         console.error(loginError);
         return next(loginError);
       }
+      if (!userInfo[user.userid]) {
+        userInfo[user.userid] = {userId: user.userid};
+        console.log(userInfo);
+    }
       return res.send('success');
     });
   })(req, res, next); // authenticate의 인자로 req, res, next 전달 위해 붙여줌
