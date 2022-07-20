@@ -2,6 +2,10 @@ import { Server } from 'socket.io';
 import { instrument } from "@socket.io/admin-ui";
 import socketEvent from '../socket-events';
 import {userInfo} from '../server.js'
+import Game from '../lib/gamemode.js'
+// import Game from './dummy.js'
+
+let games = {};
 
 module.exports = (server) => {
     const ioServer = new Server(server, {
@@ -18,8 +22,6 @@ module.exports = (server) => {
     // Socket 및 webRTC 관련 Settings
     function publicRooms() {
         const {sockets: {adapter: {sids, rooms}}} = ioServer;
-        // const sids = ioServer.sockets.adapter.sids;
-        // const rooms = ioServer.sockets.adapter.rooms;
         const publicRooms = [];
         rooms.forEach((_, key) => {
             if(sids.get(key) === undefined) {
@@ -29,8 +31,9 @@ module.exports = (server) => {
         return publicRooms;
     }
     
-    function countRoom(roomName) {
-        return ioServer.sockets.adapter.rooms.get(roomName)?.size;
+    // room에 몇 명 있나 확인용
+    function countRoom(roomId) {
+        return ioServer.sockets.adapter.rooms.get(roomId)?.size;
     }
     
     ioServer.on("connection", (socket) => {
@@ -40,22 +43,20 @@ module.exports = (server) => {
             socket.broadcast.emit("friendList", userId, status);
         })
 
-        socket.on("canvasTest", () => {
-            console.log("canvastest");
-            socket.emit("canvasTest1", "성공");
-        });
         socket.on("checkEnterableRoom", done => {
-            const roomNumber = 0; // debugging - 추후 자동 생성되도록 수정 필요. 임시로 그냥 0 넣음
-            done(roomNumber);
+            const roomId = Date.now();
+            done(roomId); // >> emit.checkEnterableRoom으로 roomId 보냄
         });
-         // socket enterRoom event 이름 수정 확인 필요
-        socket.on("enterRoom", (userId, socketId, roomNumber, done) => {
-            console.log(roomNumber);
+
+        // socket enterRoom event 이름 수정 확인 필요
+        socket.on("enterRoom", (userId, socketId, roomId, done) => {
+        
             socket["userid"] = userId;
-            socket.join(roomNumber); // room + debugging - roomName 변경필요 (자동으로 가능한 방으로 들어가도록)
+            socket.join(roomId);
+            
             done();
-            socket.to(roomNumber).emit("welcome", roomNumber, countRoom(roomNumber), userId, socketId);
-            socket.room = roomNumber;
+            socket.to(roomId).emit("welcome", roomId, countRoom(roomId), userId, socketId);
+            socket.room = roomId;
         });
 
 
@@ -95,7 +96,6 @@ module.exports = (server) => {
             const user = userInfo[id];
             user["socket"] = socket.id;
             socket["userId"] = id;
-            // console.log(userInfo);
         })
 
         socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
@@ -105,10 +105,8 @@ module.exports = (server) => {
         });
         
         socket.on("new_message", (msg, room, done) => {
-            // console.log("__debug 1 ", here);
-            // console.log(socket.nickname);
-            console.log(`RoomName2 : ${room}`);
             console.log(`메시지 : ${msg}`);
+            console.log(`roomId2 : ${room}`);
             socket.to(room).emit("new_message", `socket: ${msg}`); //???
             console.log(`RoomName3 : ${room}`);
             done();
@@ -132,17 +130,6 @@ module.exports = (server) => {
               color,
               thickness,
             } = data;
-        
-            // const { ctx } = socket.witeboard;
-            
-            // ctx.beginPath();
-            // ctx.strokeStyle = color;
-            // ctx.lineWidth = thickness;
-            // ctx.moveTo(prev.x, prev.y);
-            // ctx.lineTo(curr.x, curr.y);
-            // ctx.lineJoin = 'round';
-            // ctx.lineCap = 'round';
-            // ctx.stroke();
         });
     
         socket.on(socketEvent.DRAW, (data) => {
@@ -176,7 +163,91 @@ module.exports = (server) => {
             connectedClient[socket.id].curr = null;
         });
 
-        // socket.on("")
-    
+        
+        /*** for A Game : hyeRexx ***/
+
+        // request from a host player in the lobby
+        // need client!
+        socket.on("makeGame", (data, done) => {
+            let user = userInfo[data.userId];
+            games[data.gameId] = new Game(data.gameId);
+            games[data.gameId].joinGame(user, socket);
+            socket.join(data.gameId);
+            console.log("debug__ : games object :", games);
+            done(data.gameId);
+        }) 
+
+        // request from a general players in the lobby 
+        // need client!
+        socket.on("joinGame", (data, done) => {
+            let user = userInfo[data.userId];
+            let thisGameId;
+            // 랜덤 입장 요청 : from START btn.
+            if (data.gameId === 0) {
+                Object.keys(games).forEach((id) => {
+                    console.log("iterate in");
+                    if (games[id].joinable) {
+                        console.log("debug__ : iterate games :", games[id]);
+                        socket.join(games[id].gameId);
+                        games[id].joinGame(user, socket);
+                        thisGameId = games[id].gameId;
+                        return false;
+                    }
+                });
+
+            // 일반 입장 요청 : from invitation ACCEPT btn.
+            } else {
+                games[data.gameId].joinGame(user,socket);
+                thisGameId = data.gameId;
+                socket.join(data.gameId);
+            }
+
+            done(thisGameId);
+        });
+
+        // request for generalPlayer
+        // this event emit to ALLPlayer with this user's ready info
+        // need client!
+        socket.on("singleReady", (data) => {
+            let user = userInfo[data.userId];
+            games[data.gameId].readyGame(user);
+        })
+        
+        // request for start game from client, host!
+        // need client!
+        socket.on("startupRequest", (data, done) => {
+            let game = games[data.gameId];
+
+            if (game.host === data.userId) {        
+                game.startGame();
+                done();
+            }
+        }); 
+
+        // request from nowPlayer
+        // this event emit to ALLPlayer with next turn info.
+        // need client!
+        socket.on("openTurn", (data) => {
+            games[data.gameId].openTurn();
+        });
+
+        // request from lastPlayer in a cycle
+        // this event emit to ALLPlayer with event result
+        // need client!
+        socket.on("nightEvent", (data) => {
+            let user = userInfo[data.userId];
+            let submit = data.gamedata.submit;
+            
+            games[data.gameId].nightWork(user, submit);
+        });
+
+        // request from mafiaPlayer in the game
+        // this event emit to ALLPlayer with new turn info.
+        socket.on("newCycleRequest", (data) => {
+            games[data.gameId].openNewCycle();
+        });
+
+        /*** for A Game : hyeRexx : end ***/
+
     });
 }
