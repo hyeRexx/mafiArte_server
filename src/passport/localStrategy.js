@@ -3,7 +3,7 @@ local (not social) 로 로그인 하려는 경우의 strategy 적용
 */
 
 const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
+const LocalStrategy = require('passport-local');
 const bcrypt = require('bcrypt'); // 해쉬화된 비밀번호의 비교를 위해
 
 const dbpool = require('../lib/db');

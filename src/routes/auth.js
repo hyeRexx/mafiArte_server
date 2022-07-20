@@ -1,15 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-const setAuth = require('../passport/index');
 const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
 
 import {userInfo} from '../server';
 // import {createHashedPassword} from '../passport/salted'
-
-setAuth();
 
 /* hyeRexx : join */
 router.post('/user/join', async (req, res) => {
@@ -75,6 +72,7 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
         userInfo[user.userid] = {userId: user.userid};
       }
     }
+
       return res.send('success');
     });
   })(req, res, next); // authenticate의 인자로 req, res, next 전달 위해 붙여줌
