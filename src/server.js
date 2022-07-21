@@ -41,7 +41,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // app.use(cookieParser());
 
-// app.set('trust proxy', 1);
+app.set('trust proxy', 1);
 app.use(session({
     resave: false,
     saveUninitialized: false,
@@ -49,7 +49,7 @@ app.use(session({
     store: new FileStore(),
     cookie: {
         httpOnly: true,
-        domain: "d2wm85v592lxtd.cloudfront.net",
+        domain: "marfiarte.click",
         path: '/',
         secure: true,
         sameSite: 'None'

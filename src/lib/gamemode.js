@@ -1,4 +1,5 @@
 import {userInfo} from '../server.js'
+const dbpool = require('./db');
 
 export default class Game {
     // 게임 생성
@@ -49,7 +50,7 @@ export default class Game {
 
     // 게임 입장 : user object에 추가 속성 부여 및 각 array에 push
     joinGame(user, socket) {    
-        user['gameId'] = this.gamdId;
+        user['gameId'] = this.gameId;
         user['state'] = false;     // 게임 in, user state 변경
         user['ready'] = false;     // 인게임용 추가 속성 : 레디 정보
         user['mafia'] = false;     // 인게임용 추가 속성 : 마피아 정보
@@ -64,14 +65,14 @@ export default class Game {
         this.playerCnt == 1 ? this.setHost() : null; // 호스트 뽑기
 
         // 새로운 유저 입장 알림
-        this.emitAll("notifyNew", user.userId);
+        // this.emitAll("notifyNew", user.userId); // room 입장 완료시에 
     }
 
 
     // 게임 레디 : 호스트가 아닌 일반 유저만 작동 가능
     // ready - cancle ready 한 번에 작동 (조건 분기 있음)
     // ready 버튼에 onclick으로 game.readyGame, event 유저의 userId 전달
-    readyGame(user) {
+    readyGame(user, socket) {
         if (!user.ready) {
             this.turnQue.push(user.userId);
             user.ready = true;
@@ -84,8 +85,9 @@ export default class Game {
         // add it : this.playerCnt > 3 && 
         if (this.turnQue.length === this.playerCnt) {
             // 받아서 start button 활성화 가능
-            // 모두에게 전송, Client에서 구분
-            this.emitAll("reayToStart", {readyToStart : true}); 
+            // host에게만 start 가능 event 보냄
+            const hostSocket = userInfo[this.host].socket.id
+            socket.to(hostSocket).emit("readyToStart", {readyToStart: true});
         }
 
         // 다른 유저들에게 ready 알림
@@ -105,16 +107,51 @@ export default class Game {
         this.player[this.player.findIndex(x => x.userId === this.mafia)].mafia = true;
     }
 
+    // DB에서 카테고리-단어 선택 -> 임시 샘플 데이터 입력
+    async setWord() {
+        // sample data
+        const categories = ['요리', '과일', '동물'];
+        const words = {요리: ['라면', '미역국', '카레'], 과일: ['사과', '바나나'], 동물: ['코알라', '용', '펭귄']};
+        // const [categories] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
+        const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
+        // const [words] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
+        // const selectedWord = words[Math.floor(Math.random() * words.length)];
+        const selectedWord = words[selectedCategory][Math.floor(Math.random() * words[selectedCategory].length)];
+        return {category: selectedCategory, word: selectedWord};
+    }
+
     // 게임 시작 : 조건 : readyCnt = n - 1, player > 3
     startGame() {
         this.joinable = false;
         this.cycle = 0; // 초기화
 
-        this.setGameTurn();
-        this.drawMafia();
+        // webRTC 연결을 위해 streamStart event 발생시킴
+        for (let from=0; from<this.socketAll.length-1; from++) {
+            for (let to=from+1; to<this.socketAll.length; to++) {
+                this.socketAll[from].to(this.socketAll[to].id).emit("streamStart", this.player[from], this.socketAll[from].id);
+            }
+        }
 
-        this.emitAll("gameStarted", {turnInfo : this.turnQue});
-        this.openTurn(); // 첫 턴 뽑기
+        // webRTC 연결이 시간이 걸릴 것으로 예상되므로 2초 대기했다가 후속 진행함
+        setTimeout(async ()=>{
+            this.setGameTurn();
+            this.drawMafia();
+            const word = await this.setWord();
+    
+            // webRTC 연결이 완료되면 턴, 마피아 정하고나서 game start event 발생시킴
+            // 턴과 역할 보여주는 시간 5초 주고 이후 턴 진행함
+            for (let i=0; i<this.socketAll.length; i++) {
+                if (this.player[i] !== this.mafia) {
+                    this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word:  word});
+                } else {
+                    this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word: "?" });
+                }
+            }
+            this.emitAll("gameStarted", {turnInfo : this.turnQue});
+            setTimeout(()=>{
+                this.openTurn(); // 첫 턴 뽑기
+            }, 5000);
+        }, 2000);
     }
 
     // 인게임 턴 교체 : 끝난 플레이어, 다음 플레이어 리턴 (socket.on("singleTurnChange"))
@@ -161,7 +198,7 @@ export default class Game {
                 nightData.win = 'citizen'
             } else {
                 nightData.elected = this.voteRst;
-                this.rip.push(this.voteRst);
+                this.rip.push(this.voteRst); // need to modify : 선출된 사람이 없다면?
                 this.player.forEach(user => {
                     nightData.voteData.push({
                         userId : user.userId,
@@ -209,12 +246,12 @@ export default class Game {
     // 게임 종료 : 정상 종료
     closeGame() {
         this.player.forEach(user => {
-            user.ready = false;
+            user.ready = false; // need to modify : 게임 종료시 더 초기화해야할 데이터는 없나? this.joinable을 바꿔줘야할 것 같음. 경우에 따라 true or false
         });
     }
 
     // 게임 나가기 : 이벤트 유저의 userId 전달
-    exitGame(userId) {
+    exitGame(userId) { // need to modify : 게임 시작 전 나가는경우와 게임 중 나가는 경우를 나눠야 할 듯 (게임 시작 전 나가는 경우에, 꽉 차있다가 자리가 난 경우라면 joinable을 true로 바꿔줘야 할 수 있음)
         // 나가는 유저 idx 확인
         let userIdx = this.player.findIndex(x => x.userId === userId);
         let turnIdx = this.turnQue.findIndex(x => x.userId === userId);
@@ -223,7 +260,7 @@ export default class Game {
         // 플레이어 정보, 턴 정보에서 해당 유저 제거
         this.player.splice(userIdx, 1);
         this.turnQue.splice(turnIdx, 1);
-        this.socketAll.aplice(userIdx, 1);
+        this.socketAll.splice(userIdx, 1);
         
         // 나가는 사람이 호스트일 경우 호스트 뽑기
         if (exitUser.userId === this.host) {
@@ -231,18 +268,16 @@ export default class Game {
         }
 
         // 인게임용 속성 제거 : ready
-        delete this.player[userIdx].ready;
-        delete this.player[userIdx].mafia;
-        delete this.player[userIdx].servived;
-        delete this.player[userIdx].votes;
+        delete exitUser.ready;
+        delete exitUser.mafia;
+        delete exitUser.servived;
+        delete exitUser.votes;
 
         this.playerCnt--;
 
         // this.socket.to(this.gameId).emit("otherExit", userId);
         this.emitAll("someoneExit", {userId : userId});
     }
-
-
 }
 
 // const user1 = { userId : '재관', socket : '1111user' };
