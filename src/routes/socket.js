@@ -10,7 +10,7 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net", "http://localhost:3001"],
+            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"],
             credentials: true
         },
     });
