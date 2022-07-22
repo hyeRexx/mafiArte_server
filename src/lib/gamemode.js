@@ -117,7 +117,8 @@ export default class Game {
         // const [words] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
         // const selectedWord = words[Math.floor(Math.random() * words.length)];
         const selectedWord = words[selectedCategory][Math.floor(Math.random() * words[selectedCategory].length)];
-        return {category: selectedCategory, word: selectedWord};
+        this.word = selectedWord;
+        return [selectedCategory, selectedWord];
     }
 
     // 게임 시작 : 조건 : readyCnt = n - 1, player > 3
@@ -136,15 +137,15 @@ export default class Game {
         setTimeout(async ()=>{
             this.setGameTurn();
             this.drawMafia();
-            const word = await this.setWord();
+            const [category, word] = await this.setWord();
     
             // webRTC 연결이 완료되면 턴, 마피아 정하고나서 game start event 발생시킴
             // 턴과 역할 보여주는 시간 5초 주고 이후 턴 진행함
             for (let i=0; i<this.socketAll.length; i++) {
                 if (this.player[i] !== this.mafia) {
-                    this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word:  word});
+                    this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word:  {category, word}});
                 } else {
-                    this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word: "?" });
+                    this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word:  {category, word: "?"}});
                 }
             }
             this.emitAll("gameStarted", {turnInfo : this.turnQue});
