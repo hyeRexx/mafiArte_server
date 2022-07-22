@@ -10,7 +10,7 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net", "http://localhost:3001"],
+            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"],
             credentials: true
         },
     });
@@ -54,15 +54,23 @@ module.exports = (server) => {
         });
         
          // socket enterRoom event 이름 수정 확인 필요
-        socket.on("enterRoom", (userId, socketId, roomId, done) => {
+        socket.on("enterRoom", (data, roomId, done) => {
             console.log(`enterRoom의 ${roomId}`);
 
-            socket["userid"] = userId;
+            socket["userId"] = data.userId;
+            socket.room = roomId;
+
             socket.join(roomId);
             
             done();
-            socket.to(roomId).emit("welcome", roomId, countRoom(roomId), userId, socketId);
-            socket.room = roomId;
+
+            // 새로운 유저 입장 알림
+            socket.to(roomId).emit("notifyNew", data);
+            // socket.to(roomId).emit("welcome", roomId, countRoom(roomId), userId, socketId);
+        });
+
+        socket.on("notifyOld", (data, toSocketId) => {
+            socket.to(toSocketId).emit("notifyOld", data);
         });
 
         socket.on("offer", async (offer, offersSocket, newbieSocket, offersId) => {
@@ -92,10 +100,6 @@ module.exports = (server) => {
                 room != socket.id && socket.leave(room);
             });
         });
-        
-        socket.on("nickname", (nickname) => {
-            socket["nickname"] = nickname;
-        });
 
         socket.on('userinfo', (id) => {
             const user = userInfo[id];
@@ -110,10 +114,7 @@ module.exports = (server) => {
         });
         
         socket.on("new_message", (msg, room, done) => {
-            console.log(`메시지 : ${msg}`);
-            console.log(`roomId2 : ${room}`);
             socket.to(room).emit("new_message", `socket: ${msg}`); //???
-            console.log(`RoomName3 : ${room}`);
             done();
         });
     
@@ -239,15 +240,16 @@ module.exports = (server) => {
         // need client!
         socket.on("singleReady", (data) => {
             let user = userInfo[data.userId];
-            games[data.gameId].readyGame(user);
-        })
+            games[data.gameId].readyGame(user, socket);
+        });
         
         // request for start game from client, host!
         // need client!
         socket.on("startupRequest", (data, done) => {
             let game = games[data.gameId];
 
-            if (game.host === data.userId) {        
+            if (game.host === data.userId) {
+                socket.to(data.gameId).emit("waitStart");
                 game.startGame();
                 done();
             }
