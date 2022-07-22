@@ -31,17 +31,18 @@ setAuth();
 // CORS Setting
 let corsOptions = {
     // origin: '*', // 추후 client 도메인 정해지면 값 세팅 필요
-    origin: 'https://d2wm85v592lxtd.cloudfront.net', // 추후 client 도메인 정해지면 값 세팅 필요
+    // origin: 'https://d2wm85v592lxtd.cloudfront.net', // 추후 client 도메인 정해지면 값 세팅 필요
+    origin: 'http://localhost:3001', // 추후 client 도메인 정해지면 값 세팅 필요
     credentials: true
 }
 app.use(cors(corsOptions));
 
-// 미들웨어 세팅
+// 미들웨어 세팅ß
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // app.use(cookieParser());
 
-app.set('trust proxy', 1);
+// app.set('trust proxy', 1);
 app.use(session({
     resave: false,
     saveUninitialized: false,
@@ -49,13 +50,13 @@ app.use(session({
     store: new FileStore(),
     cookie: {
         httpOnly: true,
-        domain: "marfiarte.click",
         path: '/',
-        secure: true,
-        sameSite: 'None'
     },
 }));
 
+// domain: "marfiarte.click",
+// secure: true,
+// sameSite: 'None'
 
 // Auth 초기화 - express-session에 의존하므로 뒤에 위치시킴
 app.use(passport.initialize()); // req 객체에 passport 설정을 심음 (login, logout, isAuthenticated 등)

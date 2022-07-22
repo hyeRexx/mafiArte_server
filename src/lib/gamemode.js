@@ -104,6 +104,10 @@ export default class Game {
     // 마피아 뽑기
     drawMafia() {
         this.mafia = this.turnQue[Math.floor(Math.random() * this.turnQue.length)]
+        console.log("debug::::::", this.player);
+        console.log("debug::::::", this.player.findIndex(x => x.userId === this.mafia));
+        console.log("debug::::::", this.player[0].mafia);
+        // console.log(this.player[this.player.findIndex(x => x.userId === this.mafia)]);
         this.player[this.player.findIndex(x => x.userId === this.mafia)].mafia = true;
     }
 
@@ -129,7 +133,7 @@ export default class Game {
         // webRTC 연결을 위해 streamStart event 발생시킴
         for (let from=0; from<this.socketAll.length-1; from++) {
             for (let to=from+1; to<this.socketAll.length; to++) {
-                this.socketAll[from].to(this.socketAll[to].id).emit("streamStart", this.player[from], this.socketAll[from].id);
+                this.socketAll[from].to(this.socketAll[to].id).emit("streamStart", this.player[from].userId, this.socketAll[from].id);
             }
         }
 
@@ -152,7 +156,7 @@ export default class Game {
             setTimeout(()=>{
                 this.openTurn(); // 첫 턴 뽑기
             }, 5000);
-        }, 2000);
+        }, 5000);
     }
 
     // 인게임 턴 교체 : 끝난 플레이어, 다음 플레이어 리턴 (socket.on("singleTurnChange"))
