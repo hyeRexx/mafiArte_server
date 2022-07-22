@@ -49,7 +49,7 @@ export default class Game {
 
     // 게임 입장 : user object에 추가 속성 부여 및 각 array에 push
     joinGame(user, socket) {    
-        user['gameId'] = this.gamdId;
+        user['gameId'] = this.gameId;
         user['state'] = false;     // 게임 in, user state 변경
         user['ready'] = false;     // 인게임용 추가 속성 : 레디 정보
         user['mafia'] = false;     // 인게임용 추가 속성 : 마피아 정보
@@ -85,7 +85,7 @@ export default class Game {
         if (this.turnQue.length === this.playerCnt) {
             // 받아서 start button 활성화 가능
             // 모두에게 전송, Client에서 구분
-            this.emitAll("reayToStart", {readyToStart : true}); 
+            this.emitAll("readyToStart", {readyToStart : true}); 
         }
 
         // 다른 유저들에게 ready 알림
@@ -137,8 +137,12 @@ export default class Game {
 
     // 인게임 : 밤이되었습니다 : 시민 - 투표 / 마피아 - 제시어 맞추기
     nightWork(user, submit) {
+        // user: 해당 user의 userInfo -> user.userId: userId
+        // submit: 제출한 정보
 
-        this.nightDone++;
+        this.nightDone++;  // night work를 마친 유저의 수 (데이터 리턴 조건 체크용)
+
+        console.log(`마피아의 정답 제출 ${user} ${submit}`);
 
         if (user.userId === this.mafia) {
             this.guessForMafia(submit); // 마피아 추측
@@ -148,6 +152,7 @@ export default class Game {
 
         // 플레이어 전원이 투표 완료한 경우
         if (this.nightDone === this.playerCnt) {
+
             let nightData = {
                 win : null,
                 elected : null,
@@ -159,16 +164,17 @@ export default class Game {
                 nightData.win = 'mafia'
             } else if (this.voteRst === this.mafia && !this.guessRst) {
                 nightData.win = 'citizen'
-            } else {
+            } else if (this.voteRst){ // 시민이 만장일치로 잘못된 시민 선출 시
                 nightData.elected = this.voteRst;
                 this.rip.push(this.voteRst);
-                this.player.forEach(user => {
-                    nightData.voteData.push({
-                        userId : user.userId,
-                        vote : user.vote,
-                    });
-                });
             }
+
+            this.player.forEach(user => {
+                nightData.voteData.push({
+                    userId : user.userId,
+                    vote : user.vote,
+                });
+            });
 
             // night result 초기화 
             this.guessRst = false;
