@@ -158,7 +158,7 @@ export default class Game {
     // 인게임 턴 교체 : 끝난 플레이어, 다음 플레이어 리턴 (socket.on("singleTurnChange"))
     openTurn() {
         // 사이클 끝났는지 확인하고 notification + 사이클 끝나면 턴 제공하지 않음
-        if (this.turnCnt === this.playerCnt) {
+        if (this.turnCnt === this.playerCnt - this.rip.length) {
             this.emitAll("cycleClosed", null);
             return;
         }
@@ -175,8 +175,12 @@ export default class Game {
 
     // 인게임 : 밤이되었습니다 : 시민 - 투표 / 마피아 - 제시어 맞추기
     nightWork(user, submit) {
+        // user: 해당 user의 userInfo -> user.userId: userId
+        // submit: 제출한 정보
 
-        this.nightDone++;
+        this.nightDone++;  // night work를 마친 유저의 수 (데이터 리턴 조건 체크용)
+
+        console.log(`마피아의 정답 제출 ${user} ${submit}`);
 
         if (user.userId === this.mafia) {
             this.guessForMafia(submit); // 마피아 추측
@@ -186,6 +190,7 @@ export default class Game {
 
         // 플레이어 전원이 투표 완료한 경우
         if (this.nightDone === this.playerCnt) {
+
             let nightData = {
                 win : null,
                 elected : null,
@@ -197,7 +202,7 @@ export default class Game {
                 nightData.win = 'mafia'
             } else if (this.voteRst === this.mafia && !this.guessRst) {
                 nightData.win = 'citizen'
-            } else {
+            } else if (this.voteRst){ // 시민이 만장일치로 잘못된 시민 선출 시
                 nightData.elected = this.voteRst;
                 this.rip.push(this.voteRst); // need to modify : 선출된 사람이 없다면?
                 this.player.forEach(user => {
@@ -206,7 +211,15 @@ export default class Game {
                         vote : user.vote,
                     });
                 });
+
             }
+
+            this.player.forEach(user => {
+                nightData.voteData.push({
+                    userId : user.userId,
+                    vote : user.vote,
+                });
+            });
 
             // night result 초기화 
             this.guessRst = false;
@@ -225,8 +238,10 @@ export default class Game {
         gameuser.votes++; // 득표 수++
     
         // 투표 수 충족시 : 사망 또는 체포 분기
-        if (gameuser.votes == this.playerCnt - 1) {
+        if (gameuser.votes == this.playerCnt - this.rip.length - 1) {
             this.voteRst = gameuser.userId;
+            let dieId = this.turnQue.findIndex(x => x === user);
+            this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
         }
     }
 

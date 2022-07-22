@@ -40,7 +40,7 @@ module.exports = (server) => {
 
         socket.onAny((event) => {
             console.log(`socket의 id : ${socket.id}`)
-            // console.log(`Socket event : ${event}`);
+            console.log(`Socket event : ${event}`);
         });
 
         socket.on('loginoutAlert', (userId, status) => {
@@ -130,13 +130,7 @@ module.exports = (server) => {
 
         // 여러 명의 socketId 반환
         socket.on('listuserinfo', (listuserid) => {
-
-            console.log(`listuserid 리스트 ${listuserid}`);
-            console.log(`userInfo는 무엇 ? ${userInfo}`);
-            console.log(`userInfo 상세? ${userInfo[listuserid[0]]["socket"]}`);
-
             let listsocketid = new Array();
-            // ${userInfo[id]["socket"]["id"]}
             for (var i = 0; i < listuserid.length; i++) {
                 console.log(`유저의 socket id ${userInfo[listuserid[i]]["socket"]}`);
                 listsocketid.push(userInfo[listuserid[i]]["socket"]);
@@ -150,7 +144,6 @@ module.exports = (server) => {
 
         // 초대 보내기
         socket.on("sendinvite",(listsocketid, roomId, myId, done) => {
-            console.log(`초대 보내기 socket id ${listsocketid}`);
             for (var i = 0; i < listsocketid.length; i++) {
                 console.log(`초대하는 socket id ${listsocketid[i]}`);
                 ioServer.to(listsocketid[i]).emit("getinvite", roomId, myId);
@@ -238,7 +231,7 @@ module.exports = (server) => {
                 thisGameId = data.gameId;
                 socket.join(data.gameId);
             }
-
+            console.log("debug__ : joined games object :", games);
             done(thisGameId);
         });
 
@@ -274,7 +267,7 @@ module.exports = (server) => {
         // need client!
         socket.on("nightEvent", (data) => {
             let user = userInfo[data.userId];
-            let submit = data.gamedata.submit;
+            let submit = data.gamedata.submit; // 제출한 정보
             
             games[data.gameId].nightWork(user, submit);
         });
