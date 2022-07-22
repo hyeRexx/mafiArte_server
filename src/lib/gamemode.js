@@ -110,7 +110,7 @@ export default class Game {
         this.joinable = false;
         this.cycle = 0; // 초기화
 
-        this.setGameTurn();
+        this.setGameTurn(); 
         this.drawMafia();
 
         this.emitAll("gameStarted", {turnInfo : this.turnQue});
@@ -120,7 +120,7 @@ export default class Game {
     // 인게임 턴 교체 : 끝난 플레이어, 다음 플레이어 리턴 (socket.on("singleTurnChange"))
     openTurn() {
         // 사이클 끝났는지 확인하고 notification + 사이클 끝나면 턴 제공하지 않음
-        if (this.turnCnt === this.playerCnt) {
+        if (this.turnCnt === this.playerCnt - this.rip.length) {
             this.emitAll("cycleClosed", null);
             return;
         }
@@ -187,8 +187,10 @@ export default class Game {
         gameuser.votes++; // 득표 수++
     
         // 투표 수 충족시 : 사망 또는 체포 분기
-        if (gameuser.votes == this.playerCnt - 1) {
+        if (gameuser.votes == this.playerCnt - this.rip.length - 1) {
             this.voteRst = gameuser.userId;
+            let dieId = this.turnQue.findIndex(x => x === user);
+            this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
         }
     }
 
@@ -231,10 +233,10 @@ export default class Game {
         }
 
         // 인게임용 속성 제거 : ready
-        delete this.player[userIdx].ready;
-        delete this.player[userIdx].mafia;
-        delete this.player[userIdx].servived;
-        delete this.player[userIdx].votes;
+        delete exitUser.ready;
+        delete exitUser.mafia;
+        delete exitUser.servived;
+        delete exitUser.votes;
 
         this.playerCnt--;
 

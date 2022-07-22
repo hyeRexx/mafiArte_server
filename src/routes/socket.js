@@ -40,7 +40,7 @@ module.exports = (server) => {
 
         socket.onAny((event) => {
             console.log(`socket의 id : ${socket.id}`)
-            // console.log(`Socket event : ${event}`);
+            console.log(`Socket event : ${event}`);
         });
 
         socket.on('loginoutAlert', (userId, status) => {
