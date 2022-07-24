@@ -20,7 +20,7 @@ module.exports = () => {
 
 // 로그인 이후 접근시 session()을 통해 매번 실행되며 로그인한 회원의 req.user에 유저정보를 복구함
     passport.deserializeUser(async (id, done) => {
-        dbpool.query('SELECT * FROM USER WHERE userid=?', id).then(user => done(null, user)).catch(err => done(err));
+        dbpool.query('SELECT userid, profile_img FROM USER WHERE userid=?', id).then(user => done(null, user[0][0])).catch(err => done(err));
     });
 
     local();

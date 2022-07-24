@@ -8,6 +8,14 @@ const dbpool = require('../lib/db');
 import {userInfo} from '../server';
 // import {createHashedPassword} from '../passport/salted'
 
+/* Login 여부 확인용 */
+router.get('/', (req, res) => {
+  console.log(req.user);
+  const authenticated = req.isAuthenticated();
+  const data = {auth: authenticated, user: req.user};
+  res.send(data);
+});
+
 /* hyeRexx : join */
 router.post('/user/join', async (req, res) => {
     const joinInfo = req.body;
@@ -79,7 +87,7 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
 // logout 요청
 router.post('/logout', isLoggedIn, (req, res, next) => {
   // 로그아웃 처리 및 세션 destroy
-  // console.log("testest",req.user);
+  console.log("logout Success");
   req.logout((err) => {
     if (err) {return next(err)}
     req.session.destroy();

@@ -1,7 +1,8 @@
 import express from "express";
 const router = express.Router();
+const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 
-router.get("/home", (req, res) => {
+router.get("/home", isLoggedIn, (req, res) => {
     res.send("member");
 });
 

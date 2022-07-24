@@ -63,6 +63,7 @@ export default class Game {
         this.playerCnt++;
         this.joinable = (this.playerCnt === this.maxPlayer) ? false : true; // 게임 접근 차단
         this.playerCnt == 1 ? this.setHost() : null; // 호스트 뽑기
+        (this.host === user.userId) && this.turnQue.push(user.userId) && (user.ready = true);
 
         // 새로운 유저 입장 알림
         // this.emitAll("notifyNew", user.userId); // room 입장 완료시에 
@@ -83,12 +84,11 @@ export default class Game {
 
         // 인원 조건 충족 + 마지막 ready 처리 되었을 때 readyToStart로 전달
         // add it : this.playerCnt > 3 && 
-        if (this.turnQue.length === this.playerCnt) {
-            // 받아서 start button 활성화 가능
-            // host에게만 start 가능 event 보냄
-            const hostSocket = userInfo[this.host].socket.id
-            socket.to(hostSocket).emit("readyToStart", {readyToStart: true});
-        }
+        const hostSocket = userInfo[this.host].socket;
+        console.log(hostSocket);
+        // 받아서 start button 활성화 가능
+        // host에게만 start 가능 event 보냄
+        socket.to(hostSocket).emit("readyToStart", {readyToStart: (this.turnQue.length === this.playerCnt)});
 
         // 다른 유저들에게 ready 알림
         this.emitAll("notifyReady", {userId : user.userId, isReady: user.ready})
@@ -130,6 +130,8 @@ export default class Game {
         this.joinable = false;
         this.cycle = 0; // 초기화
 
+        this.emitAll("waitStart", null);
+
         // webRTC 연결을 위해 streamStart event 발생시킴
         for (let from=0; from<this.socketAll.length-1; from++) {
             for (let to=from+1; to<this.socketAll.length; to++) {
@@ -146,16 +148,15 @@ export default class Game {
             // webRTC 연결이 완료되면 턴, 마피아 정하고나서 game start event 발생시킴
             // 턴과 역할 보여주는 시간 5초 주고 이후 턴 진행함
             for (let i=0; i<this.socketAll.length; i++) {
-                if (this.player[i] !== this.mafia) {
+                if (this.player[i].userId !== this.mafia) {
                     this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word:  {category, word}});
                 } else {
                     this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word:  {category, word: "?"}});
                 }
             }
-            this.emitAll("gameStarted", {turnInfo : this.turnQue});
             setTimeout(()=>{
                 this.openTurn(); // 첫 턴 뽑기
-            }, 5000);
+            }, 12000);
         }, 5000);
     }
 
@@ -208,14 +209,13 @@ export default class Game {
                 nightData.win = 'citizen'
             } else if (this.voteRst){ // 시민이 만장일치로 잘못된 시민 선출 시
                 nightData.elected = this.voteRst;
-                this.rip.push(this.voteRst); // need to modify : 선출된 사람이 없다면?
+                this.rip.push(this.voteRst);
                 this.player.forEach(user => {
                     nightData.voteData.push({
                         userId : user.userId,
                         vote : user.vote,
                     });
                 });
-
             }
 
             this.player.forEach(user => {
