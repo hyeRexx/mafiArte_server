@@ -10,7 +10,6 @@ import {userInfo} from '../server';
 
 /* Login 여부 확인용 */
 router.get('/', (req, res) => {
-  console.log(req.user);
   const authenticated = req.isAuthenticated();
   const data = {auth: authenticated, user: req.user};
   res.send(data);

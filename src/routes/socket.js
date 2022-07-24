@@ -101,9 +101,7 @@ module.exports = (server) => {
 
         socket.on('userinfo', (id) => {
             const user = userInfo[id];
-            console.log(id, userInfo);
             user.socket? null: (user["socket"] = socket.id);
-            console.log(userInfo);
             socket["userId"] = id;
         })
 
