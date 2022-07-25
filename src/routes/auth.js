@@ -4,9 +4,10 @@ const passport = require('passport');
 const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
+// const crypto = require('crypto');
 
 import {userInfo} from '../server';
-// import {createHashedPassword} from '../passport/salted'
+import {createHashedPassword} from '../passport/salted'
 
 /* Login 여부 확인용 */
 router.get('/', (req, res) => {
@@ -18,26 +19,31 @@ router.get('/', (req, res) => {
   res.send(data);
 });
 
+
 /* hyeRexx : join */
 router.post('/user/join', async (req, res) => {
     const joinInfo = req.body;
     // const sql = 'SELECT userid FROM STD248.USER where userid'
     const userInfoCheck = await dbpool.query("\
-        SELECT userid FROM USER WHERE userid=?;\
-        SELECT userid FROM USER WHERE email=?"
-        ,[joinInfo.id, joinInfo.email]);
-    const [[idCheck], [emailCheck]] = userInfoCheck[0];
+        SELECT userid FROM STD248.USER where userid = ?;\
+        SELECT userid FROM STD248.USER where nickname = ?;\
+        SELECT userid FROM STD248.USER where email = ?;"
+        ,[joinInfo.id, joinInfo.nickname, joinInfo.email]);
+
+    const [[idCheck], [nickCheck], [emailCheck]] = userInfoCheck[0]
     
     let [id, email] = [true, true];
     if (idCheck) {id = false}
     if (emailCheck) {email = false}
 
-    // const {saltedPass, salt} = await createHashedPassword(joinInfo.pass);
+    if (id && nick && email) {
+        console.log("join process in");
 
-    if (id && email) {
-        console.log("join process in")
-        const sqlRes = await dbpool.query("insert into USER (userid, pass, nickname, email)\
-        values (?, ?, ?, ?);", [joinInfo.id, joinInfo.pass, joinInfo.nickname, joinInfo.email])
+        const { password, salt } = await createHashedPassword(joinInfo.pass);
+        
+        const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email, salt)\
+        values (?, ?, ?, ?, ?);", [joinInfo.id, password, joinInfo.nickname, joinInfo.email, salt]);
+        
         res.send({
             result : 1
         })

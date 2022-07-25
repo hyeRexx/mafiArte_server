@@ -13,7 +13,8 @@ export default class Game {
         this.socketAll = [];    // 게임 플레이어들의 소켓 정보 배열
         this.joinable = true;   // 게임 접근 가능 여부
         this.playerCnt = 0;     // 게임 플레이어 수 (max 파악용)
-
+        this.started = false;
+        
         this.host = null;       // 게임을 생성한 사람 또는 첫 번째 유저
         this.mafia = null;      // 게임의 마피아 (매 게임 갱신)
         this.word = null;       // 게임 제시어 : db완료후 로직 구현 : 난수로 wordid 추출
@@ -129,6 +130,7 @@ export default class Game {
     // 게임 시작 : 조건 : readyCnt = n - 1, player > 3
     startGame() {
         this.joinable = false;
+        this.started = true;
         this.cycle = 0; // 초기화
 
         this.emitAll("waitStart", null);
@@ -209,6 +211,7 @@ export default class Game {
             } else if (this.voteRst === this.mafia && !this.guessRst) {
                 nightData.win = 'citizen'
             } else if (this.voteRst){ // 시민이 만장일치로 잘못된 시민 선출 시
+
                 nightData.elected = this.voteRst;
                 this.rip.push(this.voteRst);
                 this.player.forEach(user => {
@@ -289,33 +292,47 @@ export default class Game {
         // count에 따라 joinable 초기화
         this.joinable = (this.playerCnt === this.maxPlayer) ? false : true; // 게임 접근 차단
         (this.host === user.userId) && this.turnQue.push(user.userId) && (user.ready = true);
+        this.started = false;
     }
 
     // 게임 나가기 : 이벤트 유저의 userId 전달
     exitGame(userId) { // need to modify : 게임 시작 전 나가는경우와 게임 중 나가는 경우를 나눠야 할 듯 (게임 시작 전 나가는 경우에, 꽉 차있다가 자리가 난 경우라면 joinable을 true로 바꿔줘야 할 수 있음)
         // 나가는 유저 idx 확인
-        let userIdx = this.player.findIndex(x => x.userId === userId);
-        let turnIdx = this.turnQue.findIndex(x => x.userId === userId);
+        // 나가는 유저 idx 확인
+        let userIdx = this.player.findIndex(x => x.userId === userId); 
+        let turnIdx = this.turnQue.findIndex(x => x === userId); 
         let exitUser = this.player[userIdx];
-
-        // 플레이어 정보, 턴 정보에서 해당 유저 제거
-        this.player.splice(userIdx, 1);
-        this.turnQue.splice(turnIdx, 1);
-        this.socketAll.splice(userIdx, 1);
+        let socketIdx = this.socketAll.findIndex(x => x.id == exitUser.id);
         
+        this.socketAll.splice(socketIdx, 1);
+        this.player.splice(userIdx, 1);
+        this.playerCnt--;
+
         // 나가는 사람이 호스트일 경우 호스트 뽑기
         if (exitUser.userId === this.host) {
             this.setHost();
         }
 
-        // 인게임용 속성 제거 : ready
-        delete exitUser.ready;
-        delete exitUser.mafia;
-        delete exitUser.servived;
-        delete exitUser.votes;
+        if (!this.started){
+            console.log("게임 시작 전")
 
-        this.playerCnt--;
+            this.turnQue.splice(turnIdx, 1);
 
+        } else {
+            console.log("게임 시작 후")
+
+            if (this.mafia == userId || this.turnQue.length === 3){
+                console.log("mafia 나감; 바로 시민 승리 게임 close 해야함.")
+            } else {
+                // 나간 사람이 게임 중에 죽었는지 살았는지 여부
+                if (!exitUser.servived){
+                    let ripIdx = this.rip.findIndex(x => x === userId);
+                    this.rip.splice(ripIdx);
+                } else {
+                    this.turnQue.splice(turnIdx);
+                }
+            }
+        }
         // this.socket.to(this.gameId).emit("otherExit", userId);
         // this.emitAll("someoneExit", {userId : userId});
     }
