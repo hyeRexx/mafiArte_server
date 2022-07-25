@@ -31,8 +31,7 @@ setAuth();
 // CORS Setting
 let corsOptions = {
     // origin: '*', // 추후 client 도메인 정해지면 값 세팅 필요
-    // origin: 'https://d2wm85v592lxtd.cloudfront.net', // 추후 client 도메인 정해지면 값 세팅 필요
-    origin: 'http://localhost:3001', // 추후 client 도메인 정해지면 값 세팅 필요
+    origin: 'https://d2wm85v592lxtd.cloudfront.net', // 추후 client 도메인 정해지면 값 세팅 필요
     credentials: true
 }
 app.use(cors(corsOptions));
@@ -42,7 +41,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // app.use(cookieParser());
 
-// app.set('trust proxy', 1);
+app.set('trust proxy', 1);
 app.use(session({
     resave: false,
     saveUninitialized: false,
@@ -50,7 +49,10 @@ app.use(session({
     store: new FileStore(),
     cookie: {
         httpOnly: true,
+        domain: "marfiarte.click",
         path: '/',
+        secure: true,
+        sameSite: 'None'
     },
 }));
 

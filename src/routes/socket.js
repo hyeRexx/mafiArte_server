@@ -10,8 +10,7 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"],
-            origin: ["https://admin.socket.io", "http://localhost:3001"],
+            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"],
             credentials: true
         },
     });
@@ -20,22 +19,22 @@ module.exports = (server) => {
     
     instrument(ioServer, {auth: false});
     
-    // Socket 및 webRTC 관련 Settings
-    function publicRooms() {
-        const {sockets: {adapter: {sids, rooms}}} = ioServer;
-        const publicRooms = [];
-        rooms.forEach((_, key) => {
-            if(sids.get(key) === undefined) {
-                publicRooms.push(key);
-            }
-        });
-        return publicRooms;
-    }
+    // // Socket 및 webRTC 관련 Settings
+    // function publicRooms() {
+    //     const {sockets: {adapter: {sids, rooms}}} = ioServer;
+    //     const publicRooms = [];
+    //     rooms.forEach((_, key) => {
+    //         if(sids.get(key) === undefined) {
+    //             publicRooms.push(key);
+    //         }
+    //     });
+    //     return publicRooms;
+    // }
     
-    // room에 몇 명 있나 확인용
-    function countRoom(roomId) {
-        return ioServer.sockets.adapter.rooms.get(roomId)?.size;
-    }
+    // // room에 몇 명 있나 확인용
+    // function countRoom(roomId) {
+    //     return ioServer.sockets.adapter.rooms.get(roomId)?.size;
+    // }
     
     ioServer.on("connection", (socket) => {
 
@@ -46,8 +45,9 @@ module.exports = (server) => {
 
         socket.on('loginoutAlert', (userId, status) => {
             console.log('loginoutAlert', userId, status);
+            (status === 0) && (delete userInfo[userId]);
             socket.broadcast.emit("friendList", userId, status);
-        })
+        });
 
         socket.on("checkEnterableRoom", done => {
             const roomId = + new Date();
@@ -58,16 +58,12 @@ module.exports = (server) => {
         socket.on("enterRoom", (data, roomId, done) => {
             console.log(`enterRoom의 ${roomId}`);
 
-            socket["userId"] = data.userId;
             socket.room = roomId;
-
             socket.join(roomId);
-            
-            done();
+            done(games[roomId].host);
 
             // 새로운 유저 입장 알림
             socket.to(roomId).emit("notifyNew", data);
-            // socket.to(roomId).emit("welcome", roomId, countRoom(roomId), userId, socketId);
         });
 
         socket.on("notifyOld", (data, toSocketId) => {
@@ -87,46 +83,47 @@ module.exports = (server) => {
             socket.to(othersSocket).emit("ice", ice, sendersId);
         });
         
-        socket.on("exit", () => {
-            console.log("someone exiting", socket.userid, socket.room);
-            socket.to(socket.room).emit("roomExit", socket.userid);
-            socket.leave(socket.room);
+        socket.on("exit", (userId, roomId) => { // need to modify : 게임 방에 들어가있으면 방 나가도록 조치 필요함
+            console.log("someone exiting", userId, roomId);
+            games[roomId].exitGame(userId);
+            socket.to(roomId).emit("roomExit", userId);
+            socket.leave(roomId);
             socket.room = null;
-        });
-
-        socket.on("disconnecting", () => {
-            console.log("someone disconnecting");
-            socket.rooms.forEach(room => {
-                socket.to(room).emit("roomExit", socket.userid);
-                room != socket.id && socket.leave(room);
-            });
         });
 
         socket.on('userinfo', (id) => {
             const user = userInfo[id];
             user["socket"] = socket.id;
             socket["userId"] = id;
-        })
-
-        socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
-    
-        socket.on("disconnect", () => {
-            ioServer.sockets.emit("room_change", publicRooms());
         });
         
+        // socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
+        
         socket.on("new_message", (msg, room, done) => {
-            socket.to(room).emit("new_message", `socket: ${msg}`); //???
+            socket.to(room).emit("new_message", msg);
             done();
         });
-    
+
+        
         console.log(`A client has connected (id: ${socket.id})`);
         if (!(socket.id in connectedClient)) {
             connectedClient[socket.id] = {};
         } // client 관리용
-    
+
+        socket.on("disconnecting", () => {
+            console.log("someone disconnecting", socket.userId);
+        });
+        
         socket.on('disconnect', () => {
             console.log(`Client disconnected (id: ${socket.id})`);
+            socket.rooms.forEach(room => {
+                // socket.to(room).emit("roomExit", socket.userId); -> 게임 안에서 중복되는거같아서 일단 주석처리함 (바로 위 exit)
+                room != socket.id && socket.leave(room);
+            });
+            socket.broadcast.emit("friendList", socket.userId, 0);
+            delete userInfo[socket.userId];
             delete connectedClient[socket.id];
+            console.log(socket.userId, userInfo);
         }); // client 관리용
 
         // 여러 명의 socketId 반환
@@ -203,7 +200,7 @@ module.exports = (server) => {
             let user = userInfo[data.userId];
             games[data.gameId] = new Game(data.gameId);
             games[data.gameId].joinGame(user, socket);
-            socket.join(data.gameId);
+            // socket.join(data.gameId);
             console.log("debug__ : games object :", games);
             done(data.gameId);
         }) 
@@ -215,22 +212,31 @@ module.exports = (server) => {
             let thisGameId;
             // 랜덤 입장 요청 : from START btn.
             if (data.gameId === 0) {
-                Object.keys(games).forEach((id) => {
-                    console.log("iterate in");
-                    if (games[id].joinable) {
-                        console.log("debug__ : iterate games :", games[id]);
-                        socket.join(games[id].gameId);
-                        games[id].joinGame(user, socket);
-                        thisGameId = games[id].gameId;
-                        return false;
+                const gameIds = Object.keys(games);
+                const gameCount = gameIds.length;
+                let i = 0;
+                for (; i<gameCount; i++) {
+                    if (games[gameIds[i]].joinable) {
+                        console.log("debug__ : iterate games :", games[gameIds[i]]);
+                        games[gameIds[i]].joinGame(user, socket);
+                        thisGameId = games[gameIds[i]].gameId;
+                        break;
                     }
-                });
-
+                }
+                if (i === gameCount) {
+                    const gameId = + new Date();
+                    games[gameId] = new Game(gameId);
+                    games[gameId].joinGame(user, socket);
+                    thisGameId = gameId;
+                }
             // 일반 입장 요청 : from invitation ACCEPT btn.
             } else {
-                games[data.gameId].joinGame(user,socket);
-                thisGameId = data.gameId;
-                socket.join(data.gameId);
+                if (games[data.gameId].joinable) {
+                    games[data.gameId].joinGame(user,socket);
+                    thisGameId = data.gameId;
+                } else {
+                    thisGameId = false;
+                }
             }
             console.log("debug__ : joined games object :", games);
             done(thisGameId);
@@ -250,7 +256,6 @@ module.exports = (server) => {
             let game = games[data.gameId];
 
             if (game.host === data.userId) {
-                socket.to(data.gameId).emit("waitStart");
                 game.startGame();
                 done();
             }
