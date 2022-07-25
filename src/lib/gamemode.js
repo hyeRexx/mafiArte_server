@@ -223,7 +223,7 @@ export default class Game {
                 let userIdx = this.player.findIndex(x => x.userId === this.voteRst);
                 this.player[userIdx].servived = false; // 죽은 사람 정보 변경
                 
-                if (this.turnQue.length === 2) {
+                if (this.turnQue.length <= 2) {
                   nightData.win = 'mafia';
                 }
             }
@@ -279,6 +279,8 @@ export default class Game {
 
     // 게임 종료 : 정상 종료
     closeGame() {
+        console.log("Game Closed");
+
         // User's values 초기화
         this.player.forEach(user => {
             user.ready = false; // need to modify : 게임 종료시 더 초기화해야할 데이터는 없나? this.joinable을 바꿔줘야할 것 같음. 경우에 따라 true or false
