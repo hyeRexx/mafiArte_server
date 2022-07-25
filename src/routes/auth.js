@@ -11,6 +11,9 @@ import {userInfo} from '../server';
 /* Login 여부 확인용 */
 router.get('/', (req, res) => {
   const authenticated = req.isAuthenticated();
+  if (authenticated && !userInfo[req.user.userid]) {
+    userInfo[req.user.userid] = {userId: req.user.userid};
+  }
   const data = {auth: authenticated, user: req.user};
   res.send(data);
 });
@@ -20,22 +23,20 @@ router.post('/user/join', async (req, res) => {
     const joinInfo = req.body;
     // const sql = 'SELECT userid FROM STD248.USER where userid'
     const userInfoCheck = await dbpool.query("\
-        SELECT userid FROM STD248.USER where userid = ?;\
-        SELECT userid FROM STD248.USER where nickname = ?;\
-        SELECT userid FROM STD248.USER where email = ?;"
-        ,[joinInfo.id, joinInfo.nickname, joinInfo.email]);
-    const [[idCheck], [nickCheck], [emailCheck]] = userInfoCheck[0]
+        SELECT userid FROM USER WHERE userid=?;\
+        SELECT userid FROM USER WHERE email=?"
+        ,[joinInfo.id, joinInfo.email]);
+    const [[idCheck], [emailCheck]] = userInfoCheck[0];
     
-    let [id, nick, email] = [true, true, true]
+    let [id, email] = [true, true];
     if (idCheck) {id = false}
-    if (nickCheck) {nick = false}
     if (emailCheck) {email = false}
 
     // const {saltedPass, salt} = await createHashedPassword(joinInfo.pass);
 
-    if (id && nick && email) {
+    if (id && email) {
         console.log("join process in")
-        const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email, salt)\
+        const sqlRes = await dbpool.query("insert into USER (userid, pass, nickname, email)\
         values (?, ?, ?, ?);", [joinInfo.id, joinInfo.pass, joinInfo.nickname, joinInfo.email])
         res.send({
             result : 1
@@ -45,12 +46,10 @@ router.post('/user/join', async (req, res) => {
         res.send({
             result : 0,
             idCheck: id,
-            nickCheck: nick,
             emailCheck: email
         });
     }
-
-})
+});
 
 /* hyeRexx : END */
 
@@ -74,9 +73,6 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
       if (loginError) {
         console.error(loginError);
         return next(loginError);
-      }
-      if (!userInfo[user.userid]) {
-        userInfo[user.userid] = {userId: user.userid};
       }
       return res.send('success');
     });

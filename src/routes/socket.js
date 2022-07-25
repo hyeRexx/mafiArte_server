@@ -19,22 +19,22 @@ module.exports = (server) => {
     
     instrument(ioServer, {auth: false});
     
-    // Socket 및 webRTC 관련 Settings
-    function publicRooms() {
-        const {sockets: {adapter: {sids, rooms}}} = ioServer;
-        const publicRooms = [];
-        rooms.forEach((_, key) => {
-            if(sids.get(key) === undefined) {
-                publicRooms.push(key);
-            }
-        });
-        return publicRooms;
-    }
+    // // Socket 및 webRTC 관련 Settings
+    // function publicRooms() {
+    //     const {sockets: {adapter: {sids, rooms}}} = ioServer;
+    //     const publicRooms = [];
+    //     rooms.forEach((_, key) => {
+    //         if(sids.get(key) === undefined) {
+    //             publicRooms.push(key);
+    //         }
+    //     });
+    //     return publicRooms;
+    // }
     
-    // room에 몇 명 있나 확인용
-    function countRoom(roomId) {
-        return ioServer.sockets.adapter.rooms.get(roomId)?.size;
-    }
+    // // room에 몇 명 있나 확인용
+    // function countRoom(roomId) {
+    //     return ioServer.sockets.adapter.rooms.get(roomId)?.size;
+    // }
     
     ioServer.on("connection", (socket) => {
 
@@ -45,8 +45,9 @@ module.exports = (server) => {
 
         socket.on('loginoutAlert', (userId, status) => {
             console.log('loginoutAlert', userId, status);
+            (status === 0) && (delete userInfo[userId]);
             socket.broadcast.emit("friendList", userId, status);
-        })
+        });
 
         socket.on("checkEnterableRoom", done => {
             const roomId = + new Date();
@@ -84,42 +85,45 @@ module.exports = (server) => {
         
         socket.on("exit", (userId, roomId) => { // need to modify : 게임 방에 들어가있으면 방 나가도록 조치 필요함
             console.log("someone exiting", userId, roomId);
+            games[roomId].exitGame(userId);
             socket.to(roomId).emit("roomExit", userId);
             socket.leave(roomId);
             socket.room = null;
         });
 
-        socket.on("disconnecting", () => {
-            console.log("someone disconnecting");
-            socket.rooms.forEach(room => {
-                socket.to(room).emit("roomExit", socket.userId);
-                room != socket.id && socket.leave(room);
-            });
-            // delete userInfo[socket.userId];
-            console.log(socket.userId, userInfo);
-        });
-
         socket.on('userinfo', (id) => {
             const user = userInfo[id];
-            user.socket? null: (user["socket"] = socket.id);
+            user["socket"] = socket.id;
             socket["userId"] = id;
-        })
-
+        });
+        
         // socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
         
         socket.on("new_message", (msg, room, done) => {
             socket.to(room).emit("new_message", msg);
             done();
         });
-    
+
+        
         console.log(`A client has connected (id: ${socket.id})`);
         if (!(socket.id in connectedClient)) {
             connectedClient[socket.id] = {};
         } // client 관리용
-    
+
+        socket.on("disconnecting", () => {
+            console.log("someone disconnecting", socket.userId);
+        });
+        
         socket.on('disconnect', () => {
             console.log(`Client disconnected (id: ${socket.id})`);
+            socket.rooms.forEach(room => {
+                // socket.to(room).emit("roomExit", socket.userId); -> 게임 안에서 중복되는거같아서 일단 주석처리함 (바로 위 exit)
+                room != socket.id && socket.leave(room);
+            });
+            socket.broadcast.emit("friendList", socket.userId, 0);
+            delete userInfo[socket.userId];
             delete connectedClient[socket.id];
+            console.log(socket.userId, userInfo);
         }); // client 관리용
 
         // 여러 명의 socketId 반환
@@ -227,9 +231,12 @@ module.exports = (server) => {
                 }
             // 일반 입장 요청 : from invitation ACCEPT btn.
             } else {
-                games[data.gameId].joinGame(user,socket);
-                thisGameId = data.gameId;
-                // socket.join(data.gameId);
+                if (games[data.gameId].joinable) {
+                    games[data.gameId].joinGame(user,socket);
+                    thisGameId = data.gameId;
+                } else {
+                    thisGameId = false;
+                }
             }
             console.log("debug__ : joined games object :", games);
             done(thisGameId);
