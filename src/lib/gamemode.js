@@ -89,6 +89,7 @@ export default class Game {
         console.log(hostSocket);
         // 받아서 start button 활성화 가능
         // host에게만 start 가능 event 보냄
+        // 이후 위 add it 조건 (4명 이상일 때에만 start가능) 추가 필요함
         socket.to(hostSocket).emit("readyToStart", {readyToStart: (this.turnQue.length === this.playerCnt)});
 
         // 다른 유저들에게 ready 알림
@@ -115,13 +116,13 @@ export default class Game {
     // DB에서 카테고리-단어 선택 -> 임시 샘플 데이터 입력
     async setWord() {
         // sample data
-        const categories = ['요리', '과일', '동물'];
-        const words = {요리: ['라면', '미역국', '카레'], 과일: ['사과', '바나나'], 동물: ['코알라', '용', '펭귄']};
-        // const [categories] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
+        // const categories = ['요리', '과일', '동물'];
+        // const words = {요리: ['라면', '미역국', '카레'], 과일: ['사과', '바나나'], 동물: ['코알라', '용', '펭귄']};
+        const [categories] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
         const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
-        // const [words] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
-        // const selectedWord = words[Math.floor(Math.random() * words.length)];
-        const selectedWord = words[selectedCategory][Math.floor(Math.random() * words[selectedCategory].length)];
+        const [words] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
+        const selectedWord = words[Math.floor(Math.random() * words.length)];
+        // const selectedWord = words[selectedCategory][Math.floor(Math.random() * words[selectedCategory].length)];
         this.word = selectedWord;
         return [selectedCategory, selectedWord];
     }
@@ -233,6 +234,7 @@ export default class Game {
             this.voteRst = null;
 
             this.emitAll("nightResult", nightData);
+            this.nightDone = 0;
         }
     }
 
@@ -268,9 +270,28 @@ export default class Game {
 
     // 게임 종료 : 정상 종료
     closeGame() {
+        // User's values 초기화
         this.player.forEach(user => {
             user.ready = false; // need to modify : 게임 종료시 더 초기화해야할 데이터는 없나? this.joinable을 바꿔줘야할 것 같음. 경우에 따라 true or false
+            user.mafia = false;
+            user.servived = true;
+            user.votes = 0;
         });
+
+        // Game instance 초기화
+        this.mafia = null;      // 게임의 마피아 (매 게임 갱신)
+        this.word = null;       // 게임 제시어 : db완료후 로직 구현 : 난수로 wordid 추출
+        this.rip = [];          // 사망으로 등록된 사람
+        this.turnQue = [];      // 게임 진행 순서 (queue)
+        this.turnCnt = 0;       // 사이클 내의 턴 진행 상황
+        this.cycleCnt = 0;      // 게임 반복 횟수
+        this.nightDone = 0;     // night work를 마친 유저의 수 (데이터 리턴 조건 체크용)
+        this.voteRst = null;    // 시민 투표에서 선출된 사람
+        this.guessRst = false;   // 마피아 정답 결과 (boolean)
+
+        // count에 따라 joinable 초기화
+        this.joinable = (this.playerCnt === this.maxPlayer) ? false : true; // 게임 접근 차단
+        (this.host === user.userId) && this.turnQue.push(user.userId) && (user.ready = true);
         this.started = false;
     }
 
@@ -313,7 +334,7 @@ export default class Game {
             }
         }
         // this.socket.to(this.gameId).emit("otherExit", userId);
-        this.emitAll("someoneExit", {userId : userId});
+        // this.emitAll("someoneExit", {userId : userId});
     }
 }
 

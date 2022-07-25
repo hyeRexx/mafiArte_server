@@ -12,6 +12,9 @@ import {createHashedPassword} from '../passport/salted'
 /* Login 여부 확인용 */
 router.get('/', (req, res) => {
   const authenticated = req.isAuthenticated();
+  if (authenticated && !userInfo[req.user.userid]) {
+    userInfo[req.user.userid] = {userId: req.user.userid};
+  }
   const data = {auth: authenticated, user: req.user};
   res.send(data);
 });
@@ -29,17 +32,18 @@ router.post('/user/join', async (req, res) => {
 
     const [[idCheck], [nickCheck], [emailCheck]] = userInfoCheck[0]
     
-    let [id, nick, email] = [true, true, true]
+    let [id, email] = [true, true];
     if (idCheck) {id = false}
-    if (nickCheck) {nick = false}
     if (emailCheck) {email = false}
+
     if (id && nick && email) {
-        console.log("join process in")
+        console.log("join process in");
 
         const { password, salt } = await createHashedPassword(joinInfo.pass);
         
         const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email, salt)\
-        values (?, ?, ?, ?, ?);", [joinInfo.id, password, joinInfo.nickname, joinInfo.email, salt])
+        values (?, ?, ?, ?, ?);", [joinInfo.id, password, joinInfo.nickname, joinInfo.email, salt]);
+        
         res.send({
             result : 1
         })
@@ -48,12 +52,10 @@ router.post('/user/join', async (req, res) => {
         res.send({
             result : 0,
             idCheck: id,
-            nickCheck: nick,
             emailCheck: email
         });
     }
-
-})
+});
 
 /* hyeRexx : END */
 
@@ -77,9 +79,6 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
       if (loginError) {
         console.error(loginError);
         return next(loginError);
-      }
-      if (!userInfo[user.userid]) {
-        userInfo[user.userid] = {userId: user.userid};
       }
       return res.send('success');
     });
