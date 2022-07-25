@@ -51,6 +51,7 @@ export default class Game {
 
     // 게임 입장 : user object에 추가 속성 부여 및 각 array에 push
     joinGame(user, socket) {    
+        console.log(user);
         user['gameId'] = this.gameId;
         user['state'] = false;     // 게임 in, user state 변경
         user['ready'] = false;     // 인게임용 추가 속성 : 레디 정보
@@ -117,13 +118,13 @@ export default class Game {
     // DB에서 카테고리-단어 선택 -> 임시 샘플 데이터 입력
     async setWord() {
         // sample data
-        // const categories = ['요리', '과일', '동물'];
-        // const words = {요리: ['라면', '미역국', '카레'], 과일: ['사과', '바나나'], 동물: ['코알라', '용', '펭귄']};
-        const [categories] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
+        const categories = ['요리', '과일', '동물'];
+        const words = {요리: ['라면', '미역국', '카레'], 과일: ['사과', '바나나'], 동물: ['코알라', '용', '펭귄']};
+        // const [categories] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
         const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
-        const [words] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
-        const selectedWord = words[Math.floor(Math.random() * words.length)];
-        // const selectedWord = words[selectedCategory][Math.floor(Math.random() * words[selectedCategory].length)];
+        // const [words] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
+        // const selectedWord = words[Math.floor(Math.random() * words.length)];
+        const selectedWord = words[selectedCategory][Math.floor(Math.random() * words[selectedCategory].length)];
         this.word = selectedWord;
         return [selectedCategory, selectedWord];
     }
@@ -299,7 +300,7 @@ export default class Game {
 
         // count에 따라 joinable 초기화
         this.joinable = (this.playerCnt === this.maxPlayer) ? false : true; // 게임 접근 차단
-        (this.host === user.userId) && this.turnQue.push(user.userId) && (user.ready = true);
+        this.turnQue.push(this.player[0].userId) && (this.player[0].ready = true);
         this.started = false;
     }
 
@@ -317,7 +318,7 @@ export default class Game {
         this.playerCnt--;
 
         // 나가는 사람이 호스트일 경우 호스트 뽑기
-        if (exitUser.userId === this.host) {
+        if (this.playerCnt > 0 &&  exitUser.userId === this.host) {
             this.setHost();
         }
 
