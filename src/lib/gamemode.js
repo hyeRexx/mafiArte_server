@@ -221,12 +221,7 @@ export default class Game {
                 this.rip.push(this.voteRst);
                 let userIdx = this.player.findIndex(x => x.userId === this.voteRst);
                 this.player[userIdx].servived = false; // 죽은 사람 정보 변경
-                this.player.forEach(user => {
-                    nightData.voteData.push({
-                        userId : user.userId,
-                        vote : user.vote,
-                    });
-                });
+                
                 if (this.turnQue.length === 2) {
                   nightData.win = 'mafia';
                 }
