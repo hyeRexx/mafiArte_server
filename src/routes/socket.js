@@ -272,9 +272,10 @@ module.exports = (server) => {
         // this event emit to ALLPlayer with event result
         // need client!
         socket.on("nightEvent", (data) => {
+            console.log(`nightEvent 전달`, data);
             let user = userInfo[data.userId];
             let submit = data.gamedata.submit; // 제출한 정보
-            
+            console.log(`nightEvent 전달`, user, submit);
             games[data.gameId].nightWork(user, submit);
         });
 
