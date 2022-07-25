@@ -104,11 +104,12 @@ export default class Game {
     // 마피아 뽑기
     drawMafia() {
         this.mafia = this.turnQue[Math.floor(Math.random() * this.turnQue.length)]
-        console.log("debug::::::", this.player);
-        console.log("debug::::::", this.player.findIndex(x => x.userId === this.mafia));
-        console.log("debug::::::", this.player[0].mafia);
+        console.log("debug1::::::", this.player);
+        // console.log("debug::::::", this.player.findIndex(x => x.userId === this.mafia));
+        // console.log("debug::::::", this.player[0].mafia);
         // console.log(this.player[this.player.findIndex(x => x.userId === this.mafia)]);
         this.player[this.player.findIndex(x => x.userId === this.mafia)].mafia = true;
+        console.log("debug2::::::", this.player);
     }
 
     // DB에서 카테고리-단어 선택 -> 임시 샘플 데이터 입력
@@ -146,13 +147,15 @@ export default class Game {
             // webRTC 연결이 완료되면 턴, 마피아 정하고나서 game start event 발생시킴
             // 턴과 역할 보여주는 시간 5초 주고 이후 턴 진행함
             for (let i=0; i<this.socketAll.length; i++) {
-                if (this.player[i] !== this.mafia) {
+                console.log('현재 시민', this.player[i].userId,'마피아', this.mafia);
+                if (this.player[i].userId !== this.mafia) {
+                    console.log('시민이 제시어 받음');
                     this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word:  {category, word}});
                 } else {
+                    console.log('마피아가 제시어 받음');
                     this.socketAll[i].emit("gameStarted", {turnInfo : this.turnQue, word:  {category, word: "?"}});
                 }
             }
-            this.emitAll("gameStarted", {turnInfo : this.turnQue});
             setTimeout(()=>{
                 this.openTurn(); // 첫 턴 뽑기
             }, 5000);
@@ -163,10 +166,11 @@ export default class Game {
     openTurn() {
         // 사이클 끝났는지 확인하고 notification + 사이클 끝나면 턴 제공하지 않음
         if (this.turnCnt === this.playerCnt - this.rip.length) {
+            console.log('턴이 끝났습니다.');
             this.emitAll("cycleClosed", null);
             return;
         }
-
+    
         let nowPlayer = this.turnQue.shift(); // 리턴해 줄 유저! 지금 그릴 사람!
         this.turnQue.push(nowPlayer); // 뽑고 바로 뒤로 밀어넣기
         let isMafia = (nowPlayer === this.mafia) ? true : false; // 마피아인지 확인
@@ -183,12 +187,12 @@ export default class Game {
         // submit: 제출한 정보
 
         this.nightDone++;  // night work를 마친 유저의 수 (데이터 리턴 조건 체크용)
-
-        console.log(`마피아의 정답 제출 ${user} ${submit}`);
-
+        
         if (user.userId === this.mafia) {
+            console.log(`마피아 정답 제출 ${user.userId} ${submit}`);
             this.guessForMafia(submit); // 마피아 추측
         } else {
+            console.log(`시민 정답 제출 ${user.userId} ${submit}`);
             this.voteForCitizen(submit); // 시민 투표 
         }
 
@@ -198,7 +202,7 @@ export default class Game {
             let nightData = {
                 win : null,
                 elected : null,
-                voteData : []
+                voteData : {}
             }
 
             // 분기 : 마피아 정답 맞춤 - 시민들이 마피아에 투표 + 마피아는 틀림 - else
@@ -208,21 +212,13 @@ export default class Game {
                 nightData.win = 'citizen'
             } else if (this.voteRst){ // 시민이 만장일치로 잘못된 시민 선출 시
                 nightData.elected = this.voteRst;
-                this.rip.push(this.voteRst); // need to modify : 선출된 사람이 없다면?
-                this.player.forEach(user => {
-                    nightData.voteData.push({
-                        userId : user.userId,
-                        vote : user.vote,
-                    });
-                });
-
+                this.rip.push(this.voteRst);
+                let userIdx = this.player.findIndex(x => x.userId === this.voteRst);
+                this.player[userIdx].servived = false; // 죽은 사람 정보 변경
             }
 
             this.player.forEach(user => {
-                nightData.voteData.push({
-                    userId : user.userId,
-                    vote : user.vote,
-                });
+                nightData.voteData[user.userId] = user.votes;
             });
 
             // night result 초기화 
@@ -237,15 +233,19 @@ export default class Game {
     // 투표 조건에 맞을 경우 우선 rip[0]으로 추가
     // mafia or not으로 조건 분기해서 front로 emit userid
     voteForCitizen(user) {
-        let userIdx = this.player.findIndex(x => x.userId === user);
-        let gameuser = this.player[userIdx];
-        gameuser.votes++; // 득표 수++
-    
-        // 투표 수 충족시 : 사망 또는 체포 분기
-        if (gameuser.votes == this.playerCnt - this.rip.length - 1) {
-            this.voteRst = gameuser.userId;
-            let dieId = this.turnQue.findIndex(x => x === user);
-            this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
+        console.log('이번에 뽑은 사람은?', user);
+        let gameuser;
+        if (user != ''){
+            let userIdx = this.player.findIndex(x => x.userId === user);
+            gameuser = this.player[userIdx];
+            gameuser.votes++; // 득표 수++
+            
+            // 투표 수 충족시 : 사망 또는 체포 분기
+            if (gameuser.votes == this.playerCnt - this.rip.length - 1) {
+                this.voteRst = gameuser.userId;
+                let dieId = this.turnQue.findIndex(x => x === user);
+                this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
+            }
         }
     }
 
