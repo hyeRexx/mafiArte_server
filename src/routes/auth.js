@@ -4,9 +4,10 @@ const passport = require('passport');
 const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
+// const crypto = require('crypto');
 
 import {userInfo} from '../server';
-// import {createHashedPassword} from '../passport/salted'
+import {createHashedPassword} from '../passport/salted'
 
 /* Login 여부 확인용 */
 router.get('/', (req, res) => {
@@ -14,6 +15,7 @@ router.get('/', (req, res) => {
   const data = {auth: authenticated, user: req.user};
   res.send(data);
 });
+
 
 /* hyeRexx : join */
 router.post('/user/join', async (req, res) => {
@@ -24,19 +26,20 @@ router.post('/user/join', async (req, res) => {
         SELECT userid FROM STD248.USER where nickname = ?;\
         SELECT userid FROM STD248.USER where email = ?;"
         ,[joinInfo.id, joinInfo.nickname, joinInfo.email]);
+
     const [[idCheck], [nickCheck], [emailCheck]] = userInfoCheck[0]
     
     let [id, nick, email] = [true, true, true]
     if (idCheck) {id = false}
     if (nickCheck) {nick = false}
     if (emailCheck) {email = false}
-
-    // const {saltedPass, salt} = await createHashedPassword(joinInfo.pass);
-
     if (id && nick && email) {
         console.log("join process in")
+
+        const { password, salt } = await createHashedPassword(joinInfo.pass);
+        
         const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email, salt)\
-        values (?, ?, ?, ?);", [joinInfo.id, joinInfo.pass, joinInfo.nickname, joinInfo.email])
+        values (?, ?, ?, ?, ?);", [joinInfo.id, password, joinInfo.nickname, joinInfo.email, salt])
         res.send({
             result : 1
         })
