@@ -63,7 +63,7 @@ export default class Game {
         this.socketAll.push(socket);
 
         this.playerCnt++;
-        this.joinable = (this.playerCnt === this.maxPlayer) ? false : true; // 게임 접근 차단
+        this.joinable = (this.playerCnt >= this.maxCnt) ? false : true; // 게임 접근 차단
         this.playerCnt == 1 ? this.setHost() : null; // 호스트 뽑기
         (this.host === user.userId) && this.turnQue.push(user.userId) && (user.ready = true);
 
@@ -176,14 +176,20 @@ export default class Game {
             this.emitAll("cycleClosed", null);
             return;
         }
-    
+        
+        let Players = [];
         let nowPlayer = this.turnQue.shift(); // 리턴해 줄 유저! 지금 그릴 사람!
         this.turnQue.push(nowPlayer); // 뽑고 바로 뒤로 밀어넣기
+        Players.push(nowPlayer);
+
+        // 만일 현재 턴이 마지막 턴일 경우 현재 턴과 다음 턴은 null 값을 보냄
+        this.turnCnt === this.playerCnt - this.rip.length - 1 ? Players.push(null) : Players.push(this.turnQue[0]);
+
         let isMafia = (nowPlayer === this.mafia) ? true : false; // 마피아인지 확인
         
         this.turnCnt++;
 
-        const data = { userId : nowPlayer, isMafia : isMafia };
+        const data = { userId : Players, isMafia : isMafia };
         this.emitAll("singleTurnInfo", data)
     }
 
@@ -301,7 +307,7 @@ export default class Game {
         this.guessRst = false;   // 마피아 정답 결과 (boolean)
 
         // count에 따라 joinable 초기화
-        this.joinable = (this.playerCnt === this.maxPlayer) ? false : true; // 게임 접근 차단
+        this.joinable = (this.playerCnt === this.maxCnt) ? false : true; // 게임 접근 차단
         this.turnQue.push(this.player[0].userId) && (this.player[0].ready = true);
         this.started = false;
     }
