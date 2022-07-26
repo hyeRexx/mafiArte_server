@@ -128,13 +128,16 @@ export default class Game {
     // DB에서 카테고리-단어 선택 -> 임시 샘플 데이터 입력
     async setWord() {
         // sample data
-        const categories = ['요리', '과일', '동물'];
-        const words = {요리: ['라면', '미역국', '카레'], 과일: ['사과', '바나나'], 동물: ['코알라', '용', '펭귄']};
-        // const [categories] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
+        // const categories = ['요리', '과일', '동물'];
+        // const words = {요리: ['라면', '미역국', '카레'], 과일: ['사과', '바나나'], 동물: ['코알라', '용', '펭귄']};
+        // const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
+        // const selectedWord = words[selectedCategory][Math.floor(Math.random() * words[selectedCategory].length)];
+        const [categoriesDB] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
+        const categories = categoriesDB.map(obj => obj.category);
         const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
-        // const [words] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
-        // const selectedWord = words[Math.floor(Math.random() * words.length)];
-        const selectedWord = words[selectedCategory][Math.floor(Math.random() * words[selectedCategory].length)];
+        const [wordsDB] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
+        const words = wordsDB.map(obj => obj.word);
+        const selectedWord = words[Math.floor(Math.random() * words.length)];
         this.word = selectedWord;
         return [selectedCategory, selectedWord];
     }
