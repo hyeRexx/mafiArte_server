@@ -32,8 +32,9 @@ router.post('/user/join', async (req, res) => {
 
     const [[idCheck], [nickCheck], [emailCheck]] = userInfoCheck[0]
     
-    let [id, email] = [true, true];
+    let [id, nick, email] = [true, true, true];
     if (idCheck) {id = false}
+    if (nickCheck) {nick = false}
     if (emailCheck) {email = false}
 
     if (id && nick && email) {
