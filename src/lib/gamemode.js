@@ -37,7 +37,7 @@ export default class Game {
         this.socketAll.forEach(socket => {
             // console.log(socket);
             socket.emit(msg, data);
-        })
+        });
 
         // for test
         // console.log("**GAME** emit event\nmsg :", msg, "\ndata :", data)
@@ -48,12 +48,21 @@ export default class Game {
         this.host = this.player[0].userId;
     }
 
+    isEmpty() {
+        return (this.playerCnt === 0);
+    }
+
 
     // 게임 입장 : user object에 추가 속성 부여 및 각 array에 push
     joinGame(user, socket) {    
         console.log(user);
-        user['gameId'] = this.gameId;
-        user['state'] = false;     // 게임 in, user state 변경
+        for (let i = 0; i < this.player.length; i++) {
+            if ( user.userId === this.player[i].userId ) {
+                return null;
+            }
+        }
+        user.gameId = this.gameId;
+        user.state = false;     // 게임 in, user state 변경
         user['ready'] = false;     // 인게임용 추가 속성 : 레디 정보
         user['mafia'] = false;     // 인게임용 추가 속성 : 마피아 정보
         user['servived'] = true;   // 인게임용 추가 속성 : 살았니 죽었니
@@ -86,11 +95,12 @@ export default class Game {
 
         // 인원 조건 충족 + 마지막 ready 처리 되었을 때 readyToStart로 전달
         // add it : this.playerCnt > 3 && 
-        const hostSocket = userInfo[this.host].socket;
-        console.log(hostSocket);
         // 받아서 start button 활성화 가능
         // host에게만 start 가능 event 보냄
         // 이후 위 add it 조건 (4명 이상일 때에만 start가능) 추가 필요함
+        // this.emitAll("readyToStart", {readyToStart: (this.turnQue.length === this.playerCnt)});
+        const hostSocket = userInfo[this.host].socket;
+        console.log(hostSocket);
         socket.to(hostSocket).emit("readyToStart", {readyToStart: (this.turnQue.length === this.playerCnt)});
 
         // 다른 유저들에게 ready 알림
@@ -311,29 +321,46 @@ export default class Game {
         // 나가는 유저 idx 확인
         // 나가는 유저 idx 확인
         let userIdx = this.player.findIndex(x => x.userId === userId); 
-        let turnIdx = this.turnQue.findIndex(x => x === userId); 
         let exitUser = this.player[userIdx];
+        let turnIdx = this.turnQue.findIndex(x => x === userId); 
         let socketIdx = this.socketAll.findIndex(x => x.id == exitUser.id);
         
-        this.socketAll.splice(socketIdx, 1);
+        const [socket] = this.socketAll.splice(socketIdx, 1);
         this.player.splice(userIdx, 1);
         this.playerCnt--;
 
+        this.emitAll("someoneExit", userId);
+        
         // 나가는 사람이 호스트일 경우 호스트 뽑기
-        if (this.playerCnt > 0 &&  exitUser.userId === this.host) {
+        if (this.playerCnt > 0 && exitUser.userId === this.host) {
             this.setHost();
+            // 호스트 바뀜. 방 내 유저에게 전달 필요. 클라이언트에서 isHost set 필요
+            socket.to(userInfo[this.host].socket).emit("hostChange", this.host);
         }
-
+        
         if (!this.started){
             console.log("게임 시작 전")
-
-            this.turnQue.splice(turnIdx, 1);
-
+            exitUser.ready && this.turnQue.splice(turnIdx, 1);
+            if (this.playerCnt > 0) {
+                socket.to(userInfo[this.host].socket).emit("readyToStart", {readyToStart: (this.turnQue.length === this.playerCnt)});
+            }
         } else {
             console.log("게임 시작 후")
-
-            if (this.mafia == userId || this.turnQue.length === 3){
-                console.log("mafia 나감; 바로 시민 승리 게임 close 해야함.")
+            
+            let nightData = {
+                win : null
+            }
+            
+            if (this.mafia == userId) {
+                console.log("mafia 나감; 바로 시민 승리 게임 close 해야함.");
+                nightData.win = "citizen";
+                this.emitAll("abnormalClose", nightData);
+                this.closeGame();
+            } else if (this.turnQue.length <= 2) {
+                console.log("citizen 나감; 바로 마피아 승리 게임 close 필요");
+                nightData.win = "mafia";
+                this.emitAll("abnormalClose", nightData);
+                this.closeGame();
             } else {
                 // 나간 사람이 게임 중에 죽었는지 살았는지 여부
                 if (!exitUser.servived){
@@ -344,8 +371,13 @@ export default class Game {
                 }
             }
         }
-        // this.socket.to(this.gameId).emit("otherExit", userId);
-        // this.emitAll("someoneExit", {userId : userId});
+
+        exitUser.gameId = null;
+        exitUser.state = true;
+        delete exitUser.ready;
+        delete exitUser.mafia;
+        delete exitUser.servived;
+        delete exitUser.votes;
     }
 }
 

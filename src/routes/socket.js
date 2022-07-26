@@ -61,7 +61,7 @@ module.exports = (server) => {
             socket.room = roomId;
             socket.join(roomId);
             done(games[roomId].host);
-
+            console.log(roomId, games[roomId].player.map((user) => user.userId));
             // 새로운 유저 입장 알림
             socket.to(roomId).emit("notifyNew", data);
         });
@@ -83,14 +83,6 @@ module.exports = (server) => {
             socket.to(othersSocket).emit("ice", ice, sendersId);
         });
         
-        socket.on("exit", (userId, roomId) => { // need to modify : 게임 방에 들어가있으면 방 나가도록 조치 필요함
-            console.log("someone exiting", userId, roomId);
-            games[roomId].exitGame(userId);
-            socket.to(roomId).emit("roomExit", userId);
-            socket.leave(roomId);
-            socket.room = null;
-        });
-
         socket.on('userinfo', (id) => {
             const user = userInfo[id];
             user["socket"] = socket.id;
@@ -104,11 +96,23 @@ module.exports = (server) => {
             done();
         });
 
-        
         console.log(`A client has connected (id: ${socket.id})`);
         if (!(socket.id in connectedClient)) {
             connectedClient[socket.id] = {};
         } // client 관리용
+        
+        socket.on("exit", (userId, roomId, done) => { // need to modify : 게임 방에 들어가있으면 방 나가도록 조치 필요함
+            console.log("someone exiting", userId, roomId);
+            games[roomId]?.exitGame(userId);
+            console.log(roomId, games[roomId]?.player?.map((user) => user.userId));
+            if (games[roomId]?.isEmpty()) {
+                delete games[roomId];
+                console.log(`${roomId} destroyed`);
+            }
+            socket.leave(roomId);
+            socket.room = null;
+            done();
+        });
 
         socket.on("disconnecting", () => {
             console.log("someone disconnecting", socket.userId);
@@ -116,25 +120,38 @@ module.exports = (server) => {
         
         socket.on('disconnect', () => {
             console.log(`Client disconnected (id: ${socket.id})`);
+
+            const user = userInfo[socket.userId];
+            socket.broadcast.emit("friendList", socket.userId, 0);
+            if (user?.state === false) {
+                const roomId = user.gameId;
+                games[roomId].exitGame(user.userId);
+                console.log(roomId, games[roomId].player.map((user) => user.userId));
+                if (games[roomId].isEmpty()) {
+                    delete games[roomId];
+                    console.log(`${roomId} destroyed`);
+                }
+            }
             socket.rooms.forEach(room => {
                 // socket.to(room).emit("roomExit", socket.userId); -> 게임 안에서 중복되는거같아서 일단 주석처리함 (바로 위 exit)
                 room != socket.id && socket.leave(room);
             });
-            socket.broadcast.emit("friendList", socket.userId, 0);
+
             delete userInfo[socket.userId];
             delete connectedClient[socket.id];
             console.log(socket.userId, userInfo);
+            console.log(games);
         }); // client 관리용
 
         // 여러 명의 socketId 반환
         socket.on('listuserinfo', (listuserid) => {
             let listsocketid = new Array();
             for (var i = 0; i < listuserid.length; i++) {
-                console.log(`유저의 socket id ${userInfo[listuserid[i]]["socket"]}`);
+                // console.log(`유저의 socket id ${userInfo[listuserid[i]]["socket"]}`);
                 listsocketid.push(userInfo[listuserid[i]]["socket"]);
             }
 
-            console.log(`socketid 리스트 ${listsocketid}`);
+            // console.log(`socketid 리스트 ${listsocketid}`);
             
             // 초대하고 싶은 사람 리스트 반환
             socket.emit("listsocketid", listsocketid);
@@ -143,7 +160,7 @@ module.exports = (server) => {
         // 초대 보내기
         socket.on("sendinvite",(listsocketid, roomId, myId, done) => {
             for (var i = 0; i < listsocketid.length; i++) {
-                console.log(`초대하는 socket id ${listsocketid[i]}`);
+                // console.log(`초대하는 socket id ${listsocketid[i]}`);
                 ioServer.to(listsocketid[i]).emit("getinvite", roomId, myId);
             }
             // HOST가 방으로 이동
@@ -198,10 +215,17 @@ module.exports = (server) => {
         // need client!
         socket.on("makeGame", (data, done) => {
             let user = userInfo[data.userId];
+            if (user === undefined) {
+                done(false);
+                return null;
+            } else if (user.state === false) {
+                done(false);
+                return null;
+            }
+            console.log(`In makeGame : user is ${user}`);
             games[data.gameId] = new Game(data.gameId);
             games[data.gameId].joinGame(user, socket);
-            // socket.join(data.gameId);
-            console.log("debug__ : games object :", games);
+            // console.log("debug__ : games object :", games);
             done(data.gameId);
         }) 
 
@@ -209,6 +233,16 @@ module.exports = (server) => {
         // need client!
         socket.on("joinGame", (data, done) => {
             let user = userInfo[data.userId];
+            // 서버가 restart되어서 userInfo가 없을 때 클라이언트에 갱신 신호
+            if (user === undefined) {
+                done(false);
+                return null;
+            // user.state가 false, 즉, 게임 중인 경우에는 게임 참가 불가
+            } else if (user.state === false) {
+                done(false);
+                return null;
+            }
+            console.log(`In joinGame : user is ${user}`);
             let thisGameId;
             // 랜덤 입장 요청 : from START btn.
             if (data.gameId === 0) {
@@ -217,7 +251,7 @@ module.exports = (server) => {
                 let i = 0;
                 for (; i<gameCount; i++) {
                     if (games[gameIds[i]].joinable) {
-                        console.log("debug__ : iterate games :", games[gameIds[i]]);
+                        // console.log("debug__ : iterate games :", games[gameIds[i]]);
                         games[gameIds[i]].joinGame(user, socket);
                         thisGameId = games[gameIds[i]].gameId;
                         break;
