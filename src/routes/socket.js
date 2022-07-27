@@ -12,8 +12,8 @@ module.exports = (server) => {
         cors: {
             // origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
             // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 혜린
-            // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
-            origin: ["https://admin.socket.io", "https://d1cbkw060yb1pg.cloudfront.net"], // 해인
+            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
+            // origin: ["https://admin.socket.io", "https://d1cbkw060yb1pg.cloudfront.net"], // 해인
             credentials: true
         },
     });
@@ -42,12 +42,12 @@ module.exports = (server) => {
     ioServer.on("connection", (socket) => {
 
         socket.onAny((event) => {
-            console.log(`socket의 id : ${socket.id}`)
-            console.log(`Socket event : ${event}`);
+            // console.log(`socket의 id : ${socket.id}`)
+            // console.log(`Socket event : ${event}`);
         });
 
         socket.on('loginoutAlert', (userId, status) => {
-            console.log('loginoutAlert', userId, status);
+            // console.log('loginoutAlert', userId, status);
             (status === 0) && (delete userInfo[userId]);
             socket.broadcast.emit("friendList", userId, status);
         });

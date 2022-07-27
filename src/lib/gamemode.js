@@ -329,7 +329,7 @@ export default class Game {
 
         // count에 따라 joinable 초기화
         this.joinable = (this.playerCnt === this.maxCnt) ? false : true; // 게임 접근 차단
-        this.turnQue.push(this.player[0].userId) && (this.player[0].ready = true);
+        this.turnQue.push(this.player[0]?.userId) && (this.player[0].ready = true);
         this.started = false;
     }
 
