@@ -3,6 +3,8 @@
 /src/lib/dbtest.js
 package-lock.json
 /src/sessionConfig.js
+/src/server.js
+/src/routes/socket.js
 /package.lock.json
 /yarn.lock.json
 /sessions

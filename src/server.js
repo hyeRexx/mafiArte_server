@@ -31,7 +31,7 @@ setAuth();
 // CORS Setting
 let corsOptions = {
     // origin: '*', // 추후 client 도메인 정해지면 값 세팅 필요
-    origin: 'https://d17xe7xfw04d2o.cloudfront.net', // 추후 client 도메인 정해지면 값 세팅 필요
+    origin: 'https://d1cbkw060yb1pg.cloudfront.net', // 추후 client 도메인 정해지면 값 세팅 필요
     credentials: true
 }
 app.use(cors(corsOptions));
@@ -49,7 +49,7 @@ app.use(session({
     store: new FileStore(),
     cookie: {
         httpOnly: true,
-        domain: "mafiarte.click",
+        domain: "haein-sidee.click",
         path: '/',
         secure: true,
         sameSite: 'None'
