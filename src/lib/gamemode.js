@@ -222,8 +222,8 @@ export default class Game {
 
         //console.log('플레이어 전원 투표 완료 됐나?', this.nightDone, this.playerCnt);
         // 플레이어 전원이 투표 완료한 경우
-        if (this.nightDone === this.playerCnt) {
-
+        if (this.nightDone === this.turnQue.length) { // 수정 :: 턴큐에 있는 사람 수
+            
             let nightData = {
                 win : null,
                 elected : null,
@@ -236,18 +236,16 @@ export default class Game {
             } else if (this.voteRst === this.mafia && !this.guessRst) {
                 nightData.win = 'citizen';
             } else if (this.voteRst){ // 시민이 만장일치로 잘못된 시민 선출 시
-
                 nightData.elected = this.voteRst;
                 this.rip.push(this.voteRst);
                 let userIdx = this.player.findIndex(x => x.userId === this.voteRst);
                 this.player[userIdx].servived = false; // 죽은 사람 정보 변경
                 
-                if (this.turnQue.length <= 2) {
-                  nightData.win = 'mafia';
-                }
+            } else if (this.turnQue.length <= 2) {
+                nightData.win = 'mafia';
             }
 
-            this.player.forEach(user => {
+            this.turnQue.forEach(user => { // 수정 :: 턴큐에 있는 사람
                 nightData.voteData[user.userId] = user.votes;
             });
 
@@ -275,16 +273,19 @@ export default class Game {
         console.log('이번에 뽑은 사람은?', user);
         let gameuser;
         if (user){
-            // console.log('여기 안으로 들어오면 안 됨!!!!');
+            console.log('이번에 뽑은 사람', user);
             let userIdx = this.player.findIndex(x => x.userId === user);
             gameuser = this.player[userIdx];
             gameuser.votes++; // 득표 수++
             
             // 투표 수 충족시 : 사망 또는 체포 분기
             if (gameuser.votes == this.playerCnt - this.rip.length - 1) {
+                console.log('사망 분기', gameuser.userId);
                 this.voteRst = gameuser.userId;
+                console.log('시민 아직 살아있나', this.turnQue);
                 let dieId = this.turnQue.findIndex(x => x === user);
                 this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
+                console.log('시민 잘 죽었나', this.turnQue);
             }
         }
     }
