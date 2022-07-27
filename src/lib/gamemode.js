@@ -36,12 +36,8 @@ export default class Game {
     // 방 전체에 이벤트 전송
     emitAll(msg, data) {
         this.socketAll.forEach(socket => {
-            // console.log(socket);
             socket.emit(msg, data);
         });
-
-        // for test
-        // console.log("**GAME** emit event\nmsg :", msg, "\ndata :", data)
     }
 
     // 게임 host 세팅 : player Arr의 첫 번째 유저 (입장 rs순서 정렬)
@@ -52,7 +48,6 @@ export default class Game {
     isEmpty() {
         return (this.playerCnt === 0);
     }
-
 
     // 게임 입장 : user object에 추가 속성 부여 및 각 array에 push
     joinGame(user, socket) {    
@@ -200,10 +195,13 @@ export default class Game {
         this.turnCnt === this.playerCnt - this.rip.length - 1 ? Players.push(null) : Players.push(this.turnQue[0]);
 
         let isMafia = (nowPlayer === this.mafia) ? true : false; // 마피아인지 확인
-        
+        console.log('이번 턴의 마피아', this.mafia);
+        console.log('현재 플레이어', nowPlayer);
+
         this.turnCnt++;
 
         const data = { userId : Players, isMafia : isMafia };
+        console.log('이번 턴에 대한 정보', data);
         this.emitAll("singleTurnInfo", data)
     }
 
@@ -222,6 +220,7 @@ export default class Game {
             this.voteForCitizen(submit); // 시민 투표 
         }
 
+        //console.log('플레이어 전원 투표 완료 됐나?', this.nightDone, this.playerCnt);
         // 플레이어 전원이 투표 완료한 경우
         if (this.nightDone === this.playerCnt) {
 
@@ -259,7 +258,13 @@ export default class Game {
             this.emitAll("nightResult", nightData);
             this.nightDone = 0;
             
-            (nightData['win'] !== null) && this.closeGame();
+            if (nightData['win'] === null) {
+                setTimeout(()=>{ 
+                    this.openNewCycle(); // 새로운 사이클 시작
+                }, 12000);
+            } else {
+                this.closeGame();
+            };
         }
     }
 
@@ -269,7 +274,8 @@ export default class Game {
     voteForCitizen(user) {
         console.log('이번에 뽑은 사람은?', user);
         let gameuser;
-        if (user != ''){
+        if (user){
+            // console.log('여기 안으로 들어오면 안 됨!!!!');
             let userIdx = this.player.findIndex(x => x.userId === user);
             gameuser = this.player[userIdx];
             gameuser.votes++; // 득표 수++
