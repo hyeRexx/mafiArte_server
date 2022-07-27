@@ -153,7 +153,7 @@ export default class Game {
             }
         }
 
-        // webRTC 연결이 시간이 걸릴 것으로 예상되므로 7초 대기했다가 후속 진행함
+        // webRTC 연결이 시간이 걸릴 것으로 예상되므로 5초 대기했다가 후속 진행함
         setTimeout(async ()=>{
             this.setGameTurn();
             this.drawMafia();
@@ -173,8 +173,8 @@ export default class Game {
             }
             setTimeout(()=>{
                 this.openTurn(); // 첫 턴 뽑기
-            }, 12000);
-        }, 7000);
+            }, 9000);
+        }, 5000);
     }
 
     // 인게임 턴 교체 : 끝난 플레이어, 다음 플레이어 리턴 (socket.on("singleTurnChange"))
@@ -209,6 +209,9 @@ export default class Game {
     nightWork(user, submit) {
         // user: 해당 user의 userInfo -> user.userId: userId
         // submit: 제출한 정보
+        if (!this.started) {
+            return null;
+        }
 
         this.nightDone++;  // night work를 마친 유저의 수 (데이터 리턴 조건 체크용)
         
@@ -222,7 +225,8 @@ export default class Game {
 
         //console.log('플레이어 전원 투표 완료 됐나?', this.nightDone, this.playerCnt);
         // 플레이어 전원이 투표 완료한 경우
-        if (this.nightDone === this.turnQue.length) { // 수정 :: 턴큐에 있는 사람 수
+        console.log('nightDone turnQue length', this.nightDone, this.turnQue.length);
+        if ( this.nightDone >= this.turnQue.length ) { // 수정 :: 턴큐에 있는 사람 수
             
             let nightData = {
                 win : null,
@@ -245,8 +249,11 @@ export default class Game {
                 nightData.win = 'mafia';
             }
 
-            this.turnQue.forEach(user => { // 수정 :: 턴큐에 있는 사람
-                nightData.voteData[user.userId] = user.votes;
+            this.player.forEach(user => {
+                if (!this.rip.includes(this.player)) {
+                    console.log('하이',user, user.userId, user.votes);
+                    nightData.voteData[user.userId] = user.votes;
+                }
             });
 
             // night result 초기화 
@@ -301,6 +308,10 @@ export default class Game {
     openNewCycle() {
         this.turnCnt = 0;   // 초기화
         this.cycleCnt++;    // cycle 정보 업데이트 : 추후 마피아 힌트 등 준비
+        // voteCnt 리셋
+        this.player.forEach(user => {
+            user.votes = 0;
+        });
         this.openTurn();    // 새로운 턴 정보 제공
     }
 

@@ -64,12 +64,14 @@ module.exports = (server) => {
             socket.room = roomId;
             socket.join(roomId);
             done(games[roomId].host);
+            console.log("debug__ socket join? ", socket.userId, socket.rooms);
             console.log(roomId, games[roomId].player.map((user) => user.userId));
             // 새로운 유저 입장 알림
             socket.to(roomId).emit("notifyNew", data);
         });
 
         socket.on("notifyOld", (data, toSocketId) => {
+            console.log("debug__ notifyOld : ", data);
             socket.to(toSocketId).emit("notifyOld", data);
         });
 
