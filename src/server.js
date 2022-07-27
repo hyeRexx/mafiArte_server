@@ -53,7 +53,7 @@ app.use(session({
         httpOnly: true,
         // domain: "mafiarte.click", // 진호
         // domain: "marfiarte.click", // 혜린
-        // domain: "marfiarte.click", // 재관
+        domain: "marfiarte.click", // 재관
         // domain: "marfiarte.click", // 해인
         path: '/',
         secure: true,
