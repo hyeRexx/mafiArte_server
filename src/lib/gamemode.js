@@ -35,12 +35,8 @@ export default class Game {
     // 방 전체에 이벤트 전송
     emitAll(msg, data) {
         this.socketAll.forEach(socket => {
-            // console.log(socket);
             socket.emit(msg, data);
         });
-
-        // for test
-        // console.log("**GAME** emit event\nmsg :", msg, "\ndata :", data)
     }
 
     // 게임 host 세팅 : player Arr의 첫 번째 유저 (입장 rs순서 정렬)
@@ -51,7 +47,6 @@ export default class Game {
     isEmpty() {
         return (this.playerCnt === 0);
     }
-
 
     // 게임 입장 : user object에 추가 속성 부여 및 각 array에 push
     joinGame(user, socket) {    
