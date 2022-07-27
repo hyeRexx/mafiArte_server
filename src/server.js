@@ -51,7 +51,7 @@ app.use(session({
     store: new FileStore(),
     cookie: {
         httpOnly: true,
-        // domain: "mafiarte.click",
+        // domain: "mafiarte.click", // 진호
         // domain: "marfiarte.click", // 혜린
         // domain: "marfiarte.click", // 재관
         domain: "haein-sidee.click", // 해인

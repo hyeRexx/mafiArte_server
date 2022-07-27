@@ -15,10 +15,13 @@ const dbpool = require('../lib/db');
 
 router.post('/friendinfo', isLoggedIn, async (req, res) => {
   try {
-    const [data] = await dbpool.query('SELECT userid FROM USER a join CITIZEN b on a.id = b.friendid where b.myid=4;');
-    // console.log("asdfasdfff", data);
-    // console.log(userInfo);
-    res.send([data, userInfo]);
+    const [[pk]] = await dbpool.query('SELECT id FROM USER WHERE userid=?;', req.body.userid);
+    const [data] = await dbpool.query('SELECT userid FROM USER a join CITIZEN b on a.id = b.friendid WHERE b.myid=?;', pk.id);
+    const onlineList = {};
+    Object.keys(userInfo).forEach(userid => {
+      onlineList[userid] = 1;
+    });
+    res.send([data, onlineList]);
   } catch(err){
     res.send('errrrrrrrrrr!');
   }

@@ -153,7 +153,7 @@ export default class Game {
             }
         }
 
-        // webRTC 연결이 시간이 걸릴 것으로 예상되므로 2초 대기했다가 후속 진행함
+        // webRTC 연결이 시간이 걸릴 것으로 예상되므로 7초 대기했다가 후속 진행함
         setTimeout(async ()=>{
             this.setGameTurn();
             this.drawMafia();
@@ -174,7 +174,7 @@ export default class Game {
             setTimeout(()=>{
                 this.openTurn(); // 첫 턴 뽑기
             }, 12000);
-        }, 5000);
+        }, 7000);
     }
 
     // 인게임 턴 교체 : 끝난 플레이어, 다음 플레이어 리턴 (socket.on("singleTurnChange"))
