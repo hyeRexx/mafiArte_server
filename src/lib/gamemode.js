@@ -370,7 +370,7 @@ export default class Game {
             console.log("게임 시작 전")
             exitUser.ready && this.turnQue.splice(turnIdx, 1);
             if (this.playerCnt > 0) {
-                socket.to(userInfo[this.host].socket).emit("readyToStart", {readyToStart: (this.turnQue.length === this.playerCnt)});
+                socket.to(userInfo[this.host].socket).emit("readyToStart", {readyToStart: ((this.turnQue.length === this.playerCnt) && (this.playerCnt > 1))});
             }
         } else {
             console.log("게임 시작 후")
