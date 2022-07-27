@@ -30,8 +30,10 @@ setAuth();
 
 // CORS Setting
 let corsOptions = {
-    // origin: '*', // 추후 client 도메인 정해지면 값 세팅 필요
-    origin: 'https://d2wm85v592lxtd.cloudfront.net', // 추후 client 도메인 정해지면 값 세팅 필요
+    origin: 'https://d17xe7xfw04d2o.cloudfront.net', // 진호
+    // origin: 'https://d2wm85v592lxtd.cloudfront.net', // 혜린
+    // origin: 'https://d2wm85v592lxtd.cloudfront.net', // 재관
+    // origin: 'https://d2wm85v592lxtd.cloudfront.net', // 해인
     credentials: true
 }   
 app.use(cors(corsOptions));
@@ -49,7 +51,10 @@ app.use(session({
     store: new FileStore(),
     cookie: {
         httpOnly: true,
-        domain: "marfiarte.click",
+        domain: "mafiarte.click",
+        // domain: "marfiarte.click", // 혜린
+        // domain: "marfiarte.click", // 재관
+        // domain: "marfiarte.click", // 해인
         path: '/',
         secure: true,
         sameSite: 'None'
