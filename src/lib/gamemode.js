@@ -1,4 +1,5 @@
 import {userInfo} from '../server.js'
+import {ASSERT} from './debug';
 const dbpool = require('./db');
 
 export default class Game {
