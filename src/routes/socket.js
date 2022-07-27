@@ -10,7 +10,7 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"],
+            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"],
             credentials: true
         },
     });
@@ -144,7 +144,7 @@ module.exports = (server) => {
         }); // client 관리용
 
         // 여러 명의 socketId 반환
-        socket.on('listuserinfo', (listuserid) => {
+        socket.on('listuserinfo', (listuserid, done) => {
             let listsocketid = new Array();
             for (var i = 0; i < listuserid.length; i++) {
                 // console.log(`유저의 socket id ${userInfo[listuserid[i]]["socket"]}`);
@@ -154,7 +154,8 @@ module.exports = (server) => {
             // console.log(`socketid 리스트 ${listsocketid}`);
             
             // 초대하고 싶은 사람 리스트 반환
-            socket.emit("listsocketid", listsocketid);
+            done(listsocketid);
+            // socket.emit("listsocketid", listsocketid);
         });
 
         // 초대 보내기
