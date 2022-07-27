@@ -10,9 +10,9 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
+            // origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
             // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 혜린
-            // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
+            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
             // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 해인
             credentials: true
         },
