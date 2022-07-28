@@ -36,6 +36,7 @@ export default class Game {
     // 방 전체에 이벤트 전송
     emitAll(msg, data) {
         this.socketAll.forEach(socket => {
+            console.log("emit to : ", socket.userId);
             socket.emit(msg, data);
         });
     }
@@ -112,7 +113,8 @@ export default class Game {
 
     // 마피아 뽑기
     drawMafia() {
-        this.mafia = this.turnQue[Math.floor(Math.random() * this.turnQue.length)]
+        this.mafia = this.turnQue[0];
+        // this.mafia = this.turnQue[Math.floor(Math.random() * this.turnQue.length)]
         console.log("debug1::::::", this.player);
         // console.log("debug::::::", this.player.findIndex(x => x.userId === this.mafia));
         // console.log("debug::::::", this.player[0].mafia);
@@ -351,9 +353,10 @@ export default class Game {
         let userIdx = this.player.findIndex(x => x.userId === userId); 
         let exitUser = this.player[userIdx];
         let turnIdx = this.turnQue.findIndex(x => x === userId); 
-        let socketIdx = this.socketAll.findIndex(x => x.id == exitUser.id);
+        let socketIdx = this.socketAll.findIndex(x => x.userId === userId);
         
         const [socket] = this.socketAll.splice(socketIdx, 1);
+        console.log(`exiter Id : ${userId}, deleted socket.userId : ${socket.userId}`);
         this.player.splice(userIdx, 1);
         this.playerCnt--;
 
