@@ -5,10 +5,6 @@ const dbpool = require('./db');
 export default class Game {
     // 게임 생성
     constructor(gameId) {
-        // gameId는 timestamp로, host는 maker로 정함
-        // max player, maxPlayer 변경 방지
-        // defineProperty로 game id 설정
-        // let descriptor = Object.getOwnPropertyDescriptor(obj, propertyName);
         this.maxCnt = 8;
         this.gameId = gameId;
         this.socketAll = [];    // 게임 플레이어들의 소켓 정보 배열
@@ -23,7 +19,6 @@ export default class Game {
 
         this.player = [];       // 게임에 접속한 유저 객체 원본
         this.turnQue = [];      // 게임 진행 순서 (queue)
-        this.colorSet = []      // 유저 색깔 어딘가에 심어줘라%%
 
         this.turnCnt = 0;       // 사이클 내의 턴 진행 상황
         this.cycleCnt = 0;      // 게임 반복 횟수
@@ -41,7 +36,7 @@ export default class Game {
         });
     }
 
-    // 게임 host 세팅 : player Arr의 첫 번째 유저 (입장 rs순서 정렬)
+    // 게임 host 세팅 : player Arr의 첫 번째 유저 (입장 순서 정렬)
     setHost() {
         this.host = this.player[0].userId;
     }
@@ -59,7 +54,7 @@ export default class Game {
             }
         }
         user.gameId = this.gameId;
-        user.state = false;     // 게임 in, user state 변경
+        user.state = false;        // 게임 in, user state 변경
         user['ready'] = false;     // 인게임용 추가 속성 : 레디 정보
         user['mafia'] = false;     // 인게임용 추가 속성 : 마피아 정보
         user['servived'] = true;   // 인게임용 추가 속성 : 살았니 죽었니
@@ -72,9 +67,6 @@ export default class Game {
         this.joinable = (this.playerCnt >= this.maxCnt) ? false : true; // 게임 접근 차단
         this.playerCnt == 1 ? this.setHost() : null; // 호스트 뽑기
         (this.host === user.userId) && this.turnQue.push(user.userId) && (user.ready = true);
-
-        // 새로운 유저 입장 알림
-        // this.emitAll("notifyNew", user.userId); // room 입장 완료시에 
     }
 
 
@@ -349,9 +341,10 @@ export default class Game {
     }
 
     // 게임 나가기 : 이벤트 유저의 userId 전달
-    exitGame(userId) { // need to modify : 게임 시작 전 나가는경우와 게임 중 나가는 경우를 나눠야 할 듯 (게임 시작 전 나가는 경우에, 꽉 차있다가 자리가 난 경우라면 joinable을 true로 바꿔줘야 할 수 있음)
-        // 나가는 유저 idx 확인
-        // 나가는 유저 idx 확인
+    // need to modify : 게임 시작 전 나가는경우와 게임 중 나가는 경우를 나눠야 할 듯 
+    // (게임 시작 전 나가는 경우에, 꽉 차있다가 자리가 난 경우라면 joinable을 true로 바꿔줘야 할 수 있음)
+    
+    exitGame(userId) { 
         let userIdx = this.player.findIndex(x => x.userId === userId); 
         let exitUser = this.player[userIdx];
         let turnIdx = this.turnQue.findIndex(x => x === userId); 
