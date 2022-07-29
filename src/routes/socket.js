@@ -56,7 +56,7 @@ module.exports = (server) => {
             const roomId = + new Date();
             done(roomId);
         });
-        
+
          // socket enterRoom event 이름 수정 확인 필요
         socket.on("enterRoom", (data, roomId, done) => {
             console.log(`enterRoom의 ${roomId}`);
@@ -141,7 +141,7 @@ module.exports = (server) => {
                 // socket.to(room).emit("roomExit", socket.userId); -> 게임 안에서 중복되는거같아서 일단 주석처리함 (바로 위 exit)
                 room != socket.id && socket.leave(room);
             });
-
+            
             delete userInfo[socket.userId];
             delete connectedClient[socket.id];
             console.log(socket.userId, userInfo);

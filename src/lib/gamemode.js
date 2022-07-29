@@ -36,6 +36,7 @@ export default class Game {
     // 방 전체에 이벤트 전송
     emitAll(msg, data) {
         this.socketAll.forEach(socket => {
+            console.log("emit to : ", socket.userId);
             socket.emit(msg, data);
         });
     }
@@ -81,6 +82,7 @@ export default class Game {
     // ready - cancle ready 한 번에 작동 (조건 분기 있음)
     // ready 버튼에 onclick으로 game.readyGame, event 유저의 userId 전달
     readyGame(user, socket) {
+        this.socketAll.forEach(socket => console.log(socket.Id));
         if (!user.ready) {
             this.turnQue.push(user.userId);
             user.ready = true;
@@ -96,7 +98,8 @@ export default class Game {
         // 이후 위 add it 조건 (4명 이상일 때에만 start가능) 추가 필요함
         // this.emitAll("readyToStart", {readyToStart: (this.turnQue.length === this.playerCnt)});
         const hostSocket = userInfo[this.host].socket;
-        console.log(hostSocket);
+        // console.log(`${user.userId} ready!`);
+        // console.log(this.turnQue.length === this.playerCnt);
         socket.to(hostSocket).emit("readyToStart", {readyToStart: (this.turnQue.length === this.playerCnt)});
 
         // 다른 유저들에게 ready 알림
@@ -112,7 +115,8 @@ export default class Game {
 
     // 마피아 뽑기
     drawMafia() {
-        this.mafia = this.turnQue[Math.floor(Math.random() * this.turnQue.length)]
+        this.mafia = this.turnQue[0];
+        // this.mafia = this.turnQue[Math.floor(Math.random() * this.turnQue.length)]
         console.log("debug1::::::", this.player);
         // console.log("debug::::::", this.player.findIndex(x => x.userId === this.mafia));
         // console.log("debug::::::", this.player[0].mafia);
@@ -351,9 +355,10 @@ export default class Game {
         let userIdx = this.player.findIndex(x => x.userId === userId); 
         let exitUser = this.player[userIdx];
         let turnIdx = this.turnQue.findIndex(x => x === userId); 
-        let socketIdx = this.socketAll.findIndex(x => x.id == exitUser.id);
+        let socketIdx = this.socketAll.findIndex(x => x.userId === userId);
         
         const [socket] = this.socketAll.splice(socketIdx, 1);
+        console.log(`exiter Id : ${userId}, deleted socket.userId : ${socket.userId}`);
         this.player.splice(userIdx, 1);
         this.playerCnt--;
 
@@ -362,6 +367,10 @@ export default class Game {
         // 나가는 사람이 호스트일 경우 호스트 뽑기
         if (this.playerCnt > 0 && exitUser.userId === this.host) {
             this.setHost();
+            if (!this.player[0].ready) {
+                this.player[0].ready = true;
+                this.turnQue.push(this.host);
+            }
             // 호스트 바뀜. 방 내 유저에게 전달 필요. 클라이언트에서 isHost set 필요
             socket.to(userInfo[this.host].socket).emit("hostChange", this.host);
         }
@@ -373,7 +382,7 @@ export default class Game {
                 socket.to(userInfo[this.host].socket).emit("readyToStart", {readyToStart: ((this.turnQue.length === this.playerCnt) && (this.playerCnt > 1))});
             }
         } else {
-            console.log("게임 시작 후")
+            console.log("게임 시작 후");
             
             let nightData = {
                 win : null
