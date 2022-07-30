@@ -31,7 +31,7 @@ export default class Game {
     // 방 전체에 이벤트 전송
     emitAll(msg, data) {
         this.socketAll.forEach(socket => {
-            console.log("emit to : ", socket.userId);
+            // console.log("emit to : ", socket.userId);
             socket.emit(msg, data);
         });
     }
@@ -47,7 +47,7 @@ export default class Game {
 
     // 게임 입장 : user object에 추가 속성 부여 및 각 array에 push
     joinGame(user, socket) {    
-        console.log(user);
+        console.log("joinGame :: ", user);
         for (let i = 0; i < this.player.length; i++) {
             if ( user.userId === this.player[i].userId ) {
                 return null;
@@ -66,6 +66,9 @@ export default class Game {
         this.joinable = (this.playerCnt >= this.maxCnt) ? false : true; // 게임 접근 차단
         this.playerCnt == 1 ? this.setHost() : null; // 호스트 뽑기
         (this.host === user.userId) && this.turnQue.push(user.userId) && (user.ready = true);
+
+        const hostSocket = userInfo[this.host].socket;
+        socket.to(hostSocket).emit("readyToStart", {readyToStart : (this.turnQue.length === this.playerCnt)});
     }
 
 
@@ -73,7 +76,7 @@ export default class Game {
     // ready - cancle ready 한 번에 작동 (조건 분기 있음)
     // ready 버튼에 onclick으로 game.readyGame, event 유저의 userId 전달
     readyGame(user, socket) {
-        this.socketAll.forEach(socket => console.log(socket.id));
+        // this.socketAll.forEach(socket => console.log(socket.id));
         if (!user.ready) {
             this.turnQue.push(user.userId);
             user.ready = true;
@@ -81,7 +84,7 @@ export default class Game {
             this.turnQue.splice(this.turnQue.findIndex(x => x === user.userId), 1);
             user.ready = false;
         }
-
+        console.log("readyGame :: turnQue", this.turnQue);
         // 인원 조건 충족 + 마지막 ready 처리 되었을 때 readyToStart로 전달
         // add it : this.playerCnt > 3 && 
         // 받아서 start button 활성화 가능
@@ -102,7 +105,7 @@ export default class Game {
     setGameTurn() {
         // this.turnQue = this.turnQue.sort(() => Math.random() - 0.729);
         // this.turnQue = this.turnQue.sort(() => Math.random() - 0.481);
-        console.log(this.turnQue);
+        console.log("setGameTurn :: ", this.turnQue);
     }
 
     // 마피아 뽑기
@@ -148,8 +151,15 @@ export default class Game {
             }
         }
 
-        // webRTC 연결이 시간이 걸릴 것으로 예상되므로 5초 대기했다가 후속 진행함
+        console.log("startGame :: 시작시점의 turnQue", this.turnQue); // debug
+
+        // webRTC 연결이 시간이 걸릴 것으로 예상되므로 5초 대기했다가 후속 진행함 : 비동기
         setTimeout(async ()=>{
+            // 비동기 처리로 대기하는 사이 게임이 비정상 종료될 경우를 대비.
+            if (this.started === false) {
+                console.log("gameStart를 위해 mafia, turn 등 정해야하나, 누군가의 exit으로 인해 게임이 종료됨");
+                return null;
+            }
             this.setGameTurn();
             this.drawMafia();
             const [category, word] = await this.setWord();
@@ -167,6 +177,11 @@ export default class Game {
                 }
             }
             setTimeout(()=>{
+                // 비동기 처리로 대기하는 사이 게임이 비정상 종료될 경우를 대비.
+                if (this.started === false) {
+                    console.log("openTurn 호출해야하나, 누군가의 exit으로 인해 게임이 종료됨");
+                    return null;
+                }
                 this.openTurn(); // 첫 턴 뽑기
             }, 11300);
         }, 5000);
@@ -174,8 +189,13 @@ export default class Game {
 
     // 인게임 턴 교체 : 끝난 플레이어, 다음 플레이어 리턴 (socket.on("singleTurnChange"))
     openTurn() {
+        // 비동기 처리로 대기하는 사이 게임이 비정상 종료될 경우를 대비.
+        if (this.started === false) {
+            console.log("openTurn 받았으나, 누군가의 exit으로 인해 게임이 종료됨");
+            return null;
+        }
         // 사이클 끝났는지 확인하고 notification + 사이클 끝나면 턴 제공하지 않음
-        if (this.turnCnt === this.playerCnt - this.rip.length) {
+        if (this.turnCnt >= this.playerCnt - this.rip.length) {
             console.log('턴이 끝났습니다.');
             this.emitAll("cycleClosed", this.rip);
             return;
@@ -243,8 +263,11 @@ export default class Game {
                 this.rip.push(this.voteRst);
                 let userIdx = this.player.findIndex(x => x.userId === this.voteRst);
                 this.player[userIdx].servived = false; // 죽은 사람 정보 변경
-                
-            } else if (this.turnQue.length <= 2) {
+                if (this.turnQue.length <= 2) {
+                    nightData.win = 'mafia';
+                }
+            // 아무도 죽지 않았으나, 어딘가에서 비정상적인 처리로 마피아:시민 = 1:1 인데 게임이 끝나지 않았던 경우 종료시킴 (딱히 없을지 모르겠으나 정상적이라면 걸리지 않을 케이스이므로 예외처리함)
+            } else if (this.turnQue.length <= 2) { 
                 nightData.win = 'mafia';
             }
 
@@ -276,7 +299,7 @@ export default class Game {
     // 투표 조건에 맞을 경우 우선 rip[0]으로 추가
     // mafia or not으로 조건 분기해서 front로 emit userid
     voteForCitizen(user) {
-        console.log('이번에 뽑은 사람은?', user);
+        // console.log('이번에 뽑은 사람은?', user);
         let gameuser;
         if (user){
             console.log('이번에 뽑은 사람', user);
@@ -288,10 +311,10 @@ export default class Game {
             if (gameuser.votes >= this.playerCnt - this.rip.length - 2) {
                 console.log('사망 분기', gameuser.userId);
                 this.voteRst = gameuser.userId;
-                console.log('시민 아직 살아있나', this.turnQue);
+                console.log('voteForCitizen :: 시민 아직 살아있나', this.turnQue);
                 let dieId = this.turnQue.findIndex(x => x === user);
                 this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
-                console.log('시민 잘 죽었나', this.turnQue);
+                console.log('voteForCitizen :: 시민 잘 죽었나', this.turnQue);
             }
         }
     }
@@ -316,7 +339,9 @@ export default class Game {
 
     // 게임 종료 : 정상 종료
     closeGame() {
-        console.log("Game Closed");
+        console.log("*****************************");
+        console.log("******** Game Closed ********");
+        console.log("*****************************");
 
         // User's values 초기화
         this.player.forEach(user => {
@@ -339,8 +364,11 @@ export default class Game {
 
         // count에 따라 joinable 초기화
         this.joinable = (this.playerCnt === this.maxCnt) ? false : true; // 게임 접근 차단
-        this.turnQue.push(this.player[0]?.userId) && (this.player[0].ready = true);
+        const hostIndex = this.player.findIndex(x => x.userId === this.host);
+        this.turnQue.push(this.host) && (this.player[hostIndex].ready = true);
         this.started = false;
+
+        console.log("closeGame :: turnQue 초기화 후 turnQue에 방장 push 확인 ", this.turnQue);
     }
 
     // 게임 나가기 : 이벤트 유저의 userId 전달
@@ -350,27 +378,35 @@ export default class Game {
     exitGame(userId) { 
         let userIdx = this.player.findIndex(x => x.userId === userId); 
         let exitUser = this.player[userIdx];
-        let turnIdx = this.turnQue.findIndex(x => x === userId); 
         let socketIdx = this.socketAll.findIndex(x => x.userId === userId);
         
         const [socket] = this.socketAll.splice(socketIdx, 1);
         console.log(`exiter Id : ${userId}, deleted socket.userId : ${socket.userId}`);
         this.player.splice(userIdx, 1);
         this.playerCnt--;
-
+        
         this.emitAll("someoneExit", userId);
         
         // 나가는 사람이 호스트일 경우 호스트 뽑기
         if (this.playerCnt > 0 && exitUser.userId === this.host) {
             this.setHost();
-            if (!this.player[0].ready) {
-                this.player[0].ready = true;
+            const hostIndex = this.player.findIndex(x => x.userId === this.host);
+            console.log(this.player[hostIndex]);
+            if (!this.started && !this.player[hostIndex].ready) {
+                console.log("exitGame :: 게임 시작 전 및 host 변경 전 turnQue 확인", this.turnQue);
+                this.player[hostIndex].ready = true;
                 this.turnQue.push(this.host);
+                console.log("exitGame :: 게임 시작 전 및 host 변경 후 turnQue 확인", this.turnQue);
             }
             // 호스트 바뀜. 방 내 유저에게 전달 필요. 클라이언트에서 isHost set 필요
             socket.to(userInfo[this.host].socket).emit("hostChange", this.host);
         }
         
+        console.log(`exitGame :: exit user '${userId}' turnQue에서 제거 전 turnQue`, this.turnQue); // debug
+
+        // host가 바뀌는 경우 turnQue의 수정이 발생할 수 있으므로 turnIdx의 계산을 아래로 내림 
+        let turnIdx = this.turnQue.findIndex(x => x === userId); 
+        console.log("turnIdx? : ", turnIdx);
         if (!this.started){
             console.log("게임 시작 전")
             exitUser.ready && this.turnQue.splice(turnIdx, 1);
@@ -383,27 +419,36 @@ export default class Game {
             let nightData = {
                 win : null
             }
-            
+            // 게임 추가 진행이 불가한 상황 1 : 마피아가 나감
             if (this.mafia == userId) {
                 console.log("mafia 나감; 바로 시민 승리 게임 close 해야함.");
                 nightData.win = "citizen";
                 this.emitAll("abnormalClose", nightData);
                 this.closeGame();
-            } else if (this.turnQue.length <= 2) {
-                console.log("citizen 나감; 바로 마피아 승리 게임 close 필요");
+            // 게임 추가 진행이 불가한 상황 1 : 시민이 나갔는데 마피아와 시민이 1:1이 된 상황
+            } else if (this.turnQue.length <= 3) {
+                console.log("citizen 나갔는데 인원수 안맞음; 바로 마피아 승리 게임 close 필요");
                 nightData.win = "mafia";
                 this.emitAll("abnormalClose", nightData);
                 this.closeGame();
-            } else {
-                // 나간 사람이 게임 중에 죽었는지 살았는지 여부
-                if (!exitUser.servived){
-                    let ripIdx = this.rip.findIndex(x => x === userId);
-                    this.rip.splice(ripIdx);
-                } else {
-                    this.turnQue.splice(turnIdx);
+            // 게임이 지속 가능한 상황 1 : 나간 사람이 원래 살아있던 경우
+            } else if (exitUser.servived) {
+                // sub 상황 1 : 나간 사람이 자기 순서에 나간 경우
+                if (turnIdx === this.turnQue.length - 1) {
+                    this.openTurn();
                 }
+                // 공통으로 turnQue에서 제거
+                // console.log("exitGame :: splice전 turnQue ", this.turnQue);
+                this.turnQue.splice(turnIdx, 1);
+                // console.log("exitGame :: splice후 turnQue ", this.turnQue);
+            // 게임이 지속 가능한 상황 2 : 나간 사람이 죽어있던 경우
+            } else {
+                let ripIdx = this.rip.findIndex(x => x === userId);
+                this.rip.splice(ripIdx, 1);
             }
         }
+
+        console.log(`exitGame :: exit user '${userId}' turnQue에서 제거 후 turnQue`, this.turnQue); // debug
 
         exitUser.gameId = null;
         exitUser.state = true;

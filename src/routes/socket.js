@@ -71,6 +71,7 @@ module.exports = (server) => {
         });
 
         socket.on("notifyOld", (data, toSocketId) => {
+            data.isReady = userInfo[data.userId].ready;
             console.log("debug__ notifyOld : ", data);
             socket.to(toSocketId).emit("notifyOld", data);
         });
