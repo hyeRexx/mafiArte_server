@@ -1,11 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-const setAuth = require('../passport/index');
 const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
-setAuth();
+// const crypto = require('crypto');
+
+import {userInfo} from '../server';
+import {createHashedPassword} from '../passport/salted'
+
+/* Login 여부 확인용 */
+router.get('/', (req, res) => {
+  const authenticated = req.isAuthenticated();
+  if (authenticated && !userInfo[req.user.userid]) {
+    userInfo[req.user.userid] = {userId: req.user.userid};
+  }
+  const data = {auth: authenticated, user: req.user};
+  res.send(data);
+});
+
 
 /* hyeRexx : join */
 router.post('/user/join', async (req, res) => {
@@ -16,17 +29,22 @@ router.post('/user/join', async (req, res) => {
         SELECT userid FROM STD248.USER where nickname = ?;\
         SELECT userid FROM STD248.USER where email = ?;"
         ,[joinInfo.id, joinInfo.nickname, joinInfo.email]);
+
     const [[idCheck], [nickCheck], [emailCheck]] = userInfoCheck[0]
     
-    let [id, nick, email] = [true, true, true]
+    let [id, nick, email] = [true, true, true];
     if (idCheck) {id = false}
     if (nickCheck) {nick = false}
     if (emailCheck) {email = false}
 
     if (id && nick && email) {
-        console.log("join process in")
-        const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email)\
-        values (?, ?, ?, ?);", [joinInfo.id, joinInfo.pass, joinInfo.nickname, joinInfo.email])
+        console.log("join process in");
+
+        const { password, salt } = await createHashedPassword(joinInfo.pass);
+        
+        const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email, salt)\
+        values (?, ?, ?, ?, ?);", [joinInfo.id, password, joinInfo.nickname, joinInfo.email, salt]);
+        
         res.send({
             result : 1
         })
@@ -35,12 +53,10 @@ router.post('/user/join', async (req, res) => {
         res.send({
             result : 0,
             idCheck: id,
-            nickCheck: nick,
             emailCheck: email
         });
     }
-
-})
+});
 
 /* hyeRexx : END */
 
@@ -73,6 +89,7 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
 // logout 요청
 router.post('/logout', isLoggedIn, (req, res, next) => {
   // 로그아웃 처리 및 세션 destroy
+  console.log("logout Success");
   req.logout((err) => {
     if (err) {return next(err)}
     req.session.destroy();
