@@ -102,6 +102,13 @@ module.exports = (server) => {
             done();
         });
 
+        socket.on("emoji", (roomId, emoji) => {
+            const data = {userId: socket.userId, emoji: emoji};
+            console.log("emoji :: ", roomId, data);
+            socket.emit("newEmoji", data);
+            socket.to(roomId).emit("newEmoji", data);
+        })
+
         console.log(`A client has connected (id: ${socket.id})`);
         if (!(socket.id in connectedClient)) {
             connectedClient[socket.id] = {};
