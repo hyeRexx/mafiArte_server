@@ -126,14 +126,18 @@ export default class Game {
         // const words = {요리: ['라면', '미역국', '카레'], 과일: ['사과', '바나나'], 동물: ['코알라', '용', '펭귄']};
         // const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
         // const selectedWord = words[selectedCategory][Math.floor(Math.random() * words[selectedCategory].length)];
-        const [categoriesDB] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
-        const categories = categoriesDB.map(obj => obj.category);
-        const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
-        const [wordsDB] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
-        const words = wordsDB.map(obj => obj.word);
-        const selectedWord = words[Math.floor(Math.random() * words.length)];
-        this.word = selectedWord;
-        return [selectedCategory, selectedWord];
+
+        // DB data
+        // const [categoriesDB] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
+        // const categories = categoriesDB.map(obj => obj.category);
+        // const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
+        // const [wordsDB] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
+        // const words = wordsDB.map(obj => obj.word);
+        // const selectedWord = words[Math.floor(Math.random() * words.length)];
+        // this.word = selectedWord;
+        // return [selectedCategory, selectedWord];
+        this.word = "육개장";
+        return ["", "육개장"]
     }
 
     // 게임 시작 : 조건 : readyCnt = n - 1, player > 3
@@ -245,7 +249,8 @@ export default class Game {
         //console.log('플레이어 전원 투표 완료 됐나?', this.nightDone, this.playerCnt);
         // 플레이어 전원이 투표 완료한 경우
         console.log('nightDone turnQue length', this.nightDone, this.turnQue.length);
-        if ( this.nightDone >= this.turnQue.length ) { // 수정 :: 턴큐에 있는 사람 수
+        // 수정 :: 턴큐에 있는 사람 수 - 문제점. 먼저 턴큐에서 뽑아버려서 나머지 한명 투표결과 반영 전에 게임이 끝나버림. 턴큐에서 뽑는 시점 바꿔야함. 진호형꺼에서 바뀌어있음. 추후 확인 필요.
+        if ( this.nightDone >= this.turnQue.length ) {  // 임시조치.
             
             let nightData = {
                 win : null,
@@ -263,7 +268,7 @@ export default class Game {
                 this.rip.push(this.voteRst);
                 let userIdx = this.player.findIndex(x => x.userId === this.voteRst);
                 this.player[userIdx].servived = false; // 죽은 사람 정보 변경
-                if (this.turnQue.length <= 2) {
+                if (this.turnQue.length <= 3) { // 임시조치
                     nightData.win = 'mafia';
                 }
             // 아무도 죽지 않았으나, 어딘가에서 비정상적인 처리로 마피아:시민 = 1:1 인데 게임이 끝나지 않았던 경우 종료시킴 (딱히 없을지 모르겠으나 정상적이라면 걸리지 않을 케이스이므로 예외처리함)
@@ -277,6 +282,16 @@ export default class Game {
                     nightData.voteData[user.userId] = user.votes;
                 }
             });
+
+            // 투표결과 반영 오류 관련 임시조치. 
+            if (this.voteRst) {
+                console.log('voteForCitizen :: 시민 아직 살아있나', this.turnQue);
+                let dieId = this.turnQue.findIndex(x => x === this.voteRst);
+                // if (dieId !== -1) {
+                this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
+                // }
+                console.log('voteForCitizen :: 시민 잘 죽었나', this.turnQue);
+            }
 
             // night result 초기화 
             this.guessRst = false;
@@ -311,10 +326,6 @@ export default class Game {
             if (gameuser.votes >= this.playerCnt - this.rip.length - 2) {
                 console.log('사망 분기', gameuser.userId);
                 this.voteRst = gameuser.userId;
-                console.log('voteForCitizen :: 시민 아직 살아있나', this.turnQue);
-                let dieId = this.turnQue.findIndex(x => x === user);
-                this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
-                console.log('voteForCitizen :: 시민 잘 죽었나', this.turnQue);
             }
         }
     }
