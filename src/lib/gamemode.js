@@ -263,7 +263,7 @@ export default class Game {
                 this.rip.push(this.voteRst);
                 let userIdx = this.player.findIndex(x => x.userId === this.voteRst);
                 this.player[userIdx].servived = false; // 죽은 사람 정보 변경
-                if (this.turnQue.length <= 2) {
+                if (this.turnQue.length <= 3) {
                     nightData.win = 'mafia';
                 }
             // 아무도 죽지 않았으나, 어딘가에서 비정상적인 처리로 마피아:시민 = 1:1 인데 게임이 끝나지 않았던 경우 종료시킴 (딱히 없을지 모르겠으나 정상적이라면 걸리지 않을 케이스이므로 예외처리함)
@@ -272,11 +272,19 @@ export default class Game {
             }
 
             this.player.forEach(user => {
-                if (!this.rip.includes(this.player)) {
+                if (this.turnQue.includes(user.userId)) {
                     // console.log('하이',user, user.userId, user.votes);
                     nightData.voteData[user.userId] = user.votes;
+                    console.log("votedata 확인 ::", nightData.voteData);
                 }
             });
+
+            console.log('night work before ::', this.turnQue);
+            if (this.voteRst){
+                let dieId = this.turnQue.findIndex(x => x === this.voteRst);
+                this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
+            }
+            console.log('night work after ::', this.turnQue);
 
             // night result 초기화 
             this.guessRst = false;
@@ -311,10 +319,7 @@ export default class Game {
             if (gameuser.votes >= this.playerCnt - this.rip.length - 2) {
                 console.log('사망 분기', gameuser.userId);
                 this.voteRst = gameuser.userId;
-                console.log('voteForCitizen :: 시민 아직 살아있나', this.turnQue);
-                let dieId = this.turnQue.findIndex(x => x === user);
-                this.turnQue.splice(dieId, 1); // 죽은 시민 turnQueue에서 삭제
-                console.log('voteForCitizen :: 시민 잘 죽었나', this.turnQue);
+                
             }
         }
     }
