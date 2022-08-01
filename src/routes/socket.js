@@ -10,9 +10,9 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            // origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
+            origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
             // origin: ["https://admin.socket.io", "https://d2bxvfgokknit.cloudfront.net"], // 혜린
-            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
+            // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
             // origin: ["https://admin.socket.io", "https://d1cbkw060yb1pg.cloudfront.net"], // 해인
             credentials: true
         },
@@ -126,12 +126,13 @@ module.exports = (server) => {
                 }
                 socket.leave(roomId);
                 socket.room = null;
-                done();
             }
+            done();
         });
 
         socket.on("disconnecting", () => {
-            console.log("someone disconnecting", socket.userId);
+            // console.log("someone disconnecting", socket.userId);
+            console.log("someone disconnecting", socket.id);
         });
         
         socket.on('disconnect', () => {
