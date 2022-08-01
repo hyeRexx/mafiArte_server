@@ -102,6 +102,13 @@ module.exports = (server) => {
             done();
         });
 
+        socket.on("emoji", (roomId, emoji) => {
+            const data = {userId: socket.userId, emoji: emoji};
+            console.log("emoji :: ", roomId, data);
+            socket.emit("newEmoji", data);
+            socket.to(roomId).emit("newEmoji", data);
+        })
+
         console.log(`A client has connected (id: ${socket.id})`);
         if (!(socket.id in connectedClient)) {
             connectedClient[socket.id] = {};
@@ -110,7 +117,7 @@ module.exports = (server) => {
         // need to modify : 게임 방에 들어가있으면 방 나가도록 조치 필요함
         socket.on("exit", (userId, roomId, done) => { 
             console.log("someone exiting", userId, roomId);
-            if (userInfo[userId]?.state === false){
+            if (userInfo[userId]?.state === false) { // 서버를 껐다 킨 경우에는 game에 해당 roomId 자체가 없어서 괜찮. 서버는 그대로인데 터졌던 사람이 exit누르면 roomId가 있어서 거기서 나가려는 시도를 해서 터짐
                 games[roomId]?.exitGame(userId);
                 console.log(roomId, games[roomId]?.player?.map((user) => user.userId));
                 if (games[roomId]?.isEmpty()) {
