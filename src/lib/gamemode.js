@@ -255,7 +255,8 @@ export default class Game {
             let nightData = {
                 win : null,
                 elected : null,
-                voteData : {}
+                voteData : {},
+                mafia : this.mafia
             }
 
             // 분기 : 마피아 정답 맞춤 - 시민들이 마피아에 투표 + 마피아는 틀림 - else
@@ -426,7 +427,8 @@ export default class Game {
             console.log("게임 시작 후");
             
             let nightData = {
-                win : null
+                win : null,
+                mafia : this.mafia
             }
             // 게임 추가 진행이 불가한 상황 1 : 마피아가 나감
             if (this.mafia == userId) {
