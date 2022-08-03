@@ -30,6 +30,30 @@ router.post('/friendinfo', isLoggedIn, async (req, res) => {
   }
 });
 
+router.post('/addfriend', isLoggedIn, async (req, res) => {
+  const friendId = req.body.userid;
+  const myId = req.user.userid;
+  try {
+    const [[friendPk]] = await dbpool.query('SELECT id FROM USER WHERE userid=?;', friendId);
+    if (friendPk) {
+      const [[myPk]] = await dbpool.query('SELECT id FROM USER WHERE userid=?;', myId);
+      const [[isExist]] = await dbpool.query('SELECT * FROM CITIZEN where myid=? AND friendid=?', [myPk.id, friendPk.id]);
+      if (!isExist) {
+        dbpool.query("insert into CITIZEN(myid, friendid) values (?,?)", [myPk.id, friendPk.id]);
+        dbpool.query("insert into CITIZEN(myid, friendid) values (?,?)", [friendPk.id, myPk.id]);
+        res.send("SUCCESS");
+      } else {
+        res.send("ALREADY_EXIST");
+      }
+    } else {
+      res.send("INVALID_USER");
+    }
+  } catch (err) {
+    console.log(err);
+    res.send('error!');
+  }
+})
+
 router.post('/friendDel', isLoggedIn, async (req, res) => {
   try {
     const friendId = req.body.delid;
