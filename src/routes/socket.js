@@ -10,9 +10,9 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
+            // origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
             // origin: ["https://admin.socket.io", "https://d2bxvfgokknit.cloudfront.net"], // 혜린
-            // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
+            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
             // origin: ["https://admin.socket.io", "https://d1cbkw060yb1pg.cloudfront.net"], // 해인
             credentials: true
         },
@@ -46,15 +46,34 @@ module.exports = (server) => {
             // console.log(`Socket event : ${event}`);
         });
 
+        socket.on('userinfo', (id) => {
+            const user = userInfo[id];
+            user["socket"] = socket.id;
+            socket["userId"] = id;
+        });
+
         socket.on('loginoutAlert', (userId, status) => {
             // console.log('loginoutAlert', userId, status);
             (status === 0) && (delete userInfo[userId]);
             socket.broadcast.emit("friendList", userId, status);
         });
 
-        socket.on("checkEnterableRoom", done => {
-            const roomId = + new Date();
-            done(roomId);
+        socket.on('roomList', (done) => {
+            // real data
+            // const roomList = Object.keys(games).map((roomId) => {
+            //     const game = games[roomId];
+            //     return {host: game.host, playerCnt: game.playerCnt, joinable: game.joinable, gameId: game.gameId};
+            // });
+            // done(roomList);
+
+            // sample data
+            const gamesDummy = [];
+            const hostDummy = ["wooyoungwoo", "sooyeon", "dongbro", "euntak"];
+            for (let i = 0; i < hostDummy.length; i++) {
+                const newGame = {host: hostDummy[i], playerCnt: 6, joinable: false, gameId: i};
+                gamesDummy.push(newGame);
+            }
+            done(gamesDummy);
         });
 
          // socket enterRoom event 이름 수정 확인 필요
@@ -89,11 +108,6 @@ module.exports = (server) => {
             socket.to(othersSocket).emit("ice", ice, sendersId);
         });
         
-        socket.on('userinfo', (id) => {
-            const user = userInfo[id];
-            user["socket"] = socket.id;
-            socket["userId"] = id;
-        });
         
         // socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
         
@@ -283,7 +297,7 @@ module.exports = (server) => {
                 }
             // 일반 입장 요청 : from invitation ACCEPT btn.
             } else {
-                if (games[data.gameId].joinable) {
+                if (games[data.gameId]?.joinable) {
                     games[data.gameId].joinGame(user,socket);
                     thisGameId = data.gameId;
                 } else {
