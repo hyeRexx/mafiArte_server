@@ -33,6 +33,10 @@ router.post('/friendinfo', isLoggedIn, async (req, res) => {
 router.post('/addfriend', isLoggedIn, async (req, res) => {
   const friendId = req.body.userid;
   const myId = req.user.userid;
+  if (friendId === myId){
+    res.send("INVALID_USER");
+    return;
+  }
   try {
     const [[friendPk]] = await dbpool.query('SELECT id FROM USER WHERE userid=?;', friendId);
     if (friendPk) {

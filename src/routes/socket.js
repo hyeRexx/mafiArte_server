@@ -10,9 +10,9 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            // origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
+            origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
             // origin: ["https://admin.socket.io", "https://d2bxvfgokknit.cloudfront.net"], // 혜린
-            origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
+            // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
             // origin: ["https://admin.socket.io", "https://d1cbkw060yb1pg.cloudfront.net"], // 해인
             credentials: true
         },
@@ -179,7 +179,7 @@ module.exports = (server) => {
             let listsocketid = new Array();
             for (var i = 0; i < listuserid.length; i++) {
                 // console.log(`유저의 socket id ${userInfo[listuserid[i]]["socket"]}`);
-                listsocketid.push(userInfo[listuserid[i]]["socket"]);
+                listsocketid.push(userInfo[listuserid[i]]["socket"]); // 에러 발생했음. 나중에 try로 묶어주든지 해야할 듯!
             }
 
             // console.log(`socketid 리스트 ${listsocketid}`);

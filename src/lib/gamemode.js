@@ -104,12 +104,14 @@ export default class Game {
     setGameTurn() {
         // this.turnQue = this.turnQue.sort(() => Math.random() - 0.729);
         // this.turnQue = this.turnQue.sort(() => Math.random() - 0.481);
+        this.turnQue = ["석헤린", "이진호", "이재관", "김해인"];
         console.log("setGameTurn :: ", this.turnQue);
     }
 
     // 마피아 뽑기
     drawMafia() {
-        this.mafia = this.player[0].userId; // 발표전 특정 id로 fix 필요
+        // this.mafia = this.player[0].userId; // 발표전 특정 id로 fix 필요
+        this.mafia = "이재관"
         // this.mafia = this.turnQue[Math.floor(Math.random() * this.turnQue.length)]
         console.log("debug1::::::", this.player);
         // console.log("debug::::::", this.player.findIndex(x => x.userId === this.mafia));
