@@ -104,14 +104,16 @@ export default class Game {
     setGameTurn() {
         // this.turnQue = this.turnQue.sort(() => Math.random() - 0.729);
         // this.turnQue = this.turnQue.sort(() => Math.random() - 0.481);
-        this.turnQue = ["석헤린", "이진호", "이재관", "김해인"];
-        console.log("setGameTurn :: ", this.turnQue);
+        // this.turnQue = ["hyerin", "jinho", "jaekwan", "haein"];
+        this.turnQue = ["haein", "hyerin", "jaekwan", "jinho"];
+        // this.turnQue = ["jaekwan", "jinho", "haein"];
+        // console.log("setGameTurn :: ", this.turnQue);
     }
 
     // 마피아 뽑기
     drawMafia() {
         // this.mafia = this.player[0].userId; // 발표전 특정 id로 fix 필요
-        this.mafia = "이재관"
+        this.mafia = "jaekwan"
         // this.mafia = this.turnQue[Math.floor(Math.random() * this.turnQue.length)]
         console.log("debug1::::::", this.player);
         // console.log("debug::::::", this.player.findIndex(x => x.userId === this.mafia));
@@ -137,8 +139,8 @@ export default class Game {
         // const selectedWord = words[Math.floor(Math.random() * words.length)];
         // this.word = selectedWord;
         // return [selectedCategory, selectedWord];
-        this.word = "육개장";
-        return ["", "육개장"]
+        this.word = "장수말벌";
+        return ["", "장수말벌"]
     }
 
     // 게임 시작 : 조건 : readyCnt = n - 1, player > 3
