@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import { instrument } from "@socket.io/admin-ui";
-import socketEvent from '../socket-events';
+import socketEvent from '../socketEvents';
 import {userInfo} from '../server.js'
 import Game from '../lib/gamemode.js'
 // import Game from './dummy.js'
