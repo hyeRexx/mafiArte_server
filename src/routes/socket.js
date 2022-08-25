@@ -10,10 +10,7 @@ let games = {};
 module.exports = (server) => {
     const ioServer = new Server(server, {
         cors: {
-            origin: ["https://admin.socket.io", "https://d17xe7xfw04d2o.cloudfront.net"], // 진호
-            // origin: ["https://admin.socket.io", "https://d2bxvfgokknit.cloudfront.net"], // 혜린
-            // origin: ["https://admin.socket.io", "https://d2wm85v592lxtd.cloudfront.net"], // 재관
-            // origin: ["https://admin.socket.io", "https://d1cbkw060yb1pg.cloudfront.net"], // 해인
+            origin: ["https://admin.socket.io", "https://d2bxvfgokknit.cloudfront.net"],
             credentials: true
         },
     });
@@ -22,29 +19,8 @@ module.exports = (server) => {
     
     instrument(ioServer, {auth: false});
     
-    // // Socket 및 webRTC 관련 Settings
-    // function publicRooms() {
-    //     const {sockets: {adapter: {sids, rooms}}} = ioServer;
-    //     const publicRooms = [];
-    //     rooms.forEach((_, key) => {
-    //         if(sids.get(key) === undefined) {
-    //             publicRooms.push(key);
-    //         }
-    //     });
-    //     return publicRooms;
-    // }
-    
-    // // room에 몇 명 있나 확인용
-    // function countRoom(roomId) {
-    //     return ioServer.sockets.adapter.rooms.get(roomId)?.size;
-    // }
     
     ioServer.on("connection", (socket) => {
-
-        socket.onAny((event) => {
-            // console.log(`socket의 id : ${socket.id}`)
-            // console.log(`Socket event : ${event}`);
-        });
 
         socket.on('userinfo', (id) => {
             const user = userInfo[id];
@@ -53,27 +29,26 @@ module.exports = (server) => {
         });
 
         socket.on('loginoutAlert', (userId, status) => {
-            // console.log('loginoutAlert', userId, status);
             (status === 0) && (delete userInfo[userId]);
             socket.broadcast.emit("friendList", userId, status);
         });
 
         socket.on('roomList', (done) => {
             // real data
-            // const roomList = Object.keys(games).map((roomId) => {
-            //     const game = games[roomId];
-            //     return {host: game.host, playerCnt: game.playerCnt, joinable: game.joinable, gameId: game.gameId};
-            // });
-            // done(roomList);
+            const roomList = Object.keys(games).map((roomId) => {
+                const game = games[roomId];
+                return {host: game.host, playerCnt: game.playerCnt, joinable: game.joinable, gameId: game.gameId};
+            });
+            done(roomList);
 
             // sample data
-            const gamesDummy = [];
-            const hostDummy = ["wooyoungwoo", "sooyeon", "dongbro", "euntak"];
-            for (let i = 0; i < hostDummy.length; i++) {
-                const newGame = {host: hostDummy[i], playerCnt: 6, joinable: false, gameId: i};
-                gamesDummy.push(newGame);
-            }
-            done(gamesDummy);
+            // const gamesDummy = [];
+            // const hostDummy = ["wooyoungwoo", "sooyeon", "dongbro", "euntak"];
+            // for (let i = 0; i < hostDummy.length; i++) {
+            //     const newGame = {host: hostDummy[i], playerCnt: 6, joinable: false, gameId: i};
+            //     gamesDummy.push(newGame);
+            // }
+            // done(gamesDummy);
         });
 
          // socket enterRoom event 이름 수정 확인 필요
@@ -355,3 +330,21 @@ module.exports = (server) => {
 
     });
 }
+
+
+/*
+ * mutex A = false;
+ * mutex B = false;
+ * bool flag = false //thread AA create 
+ * while(1) {
+ * 
+    AA {
+        일하러 떠나 -----
+        done() => A = true; B = true;
+    }
+
+    if (B && A) {
+        AA가 가져온 데이터로 할일
+    }
+
+ } */

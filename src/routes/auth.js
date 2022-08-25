@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./authMiddle');
 const dbpool = require('../lib/db');
-// const crypto = require('crypto');
 
 import {userInfo} from '../server';
 import {createHashedPassword} from '../passport/salted'
@@ -20,16 +18,25 @@ router.get('/', (req, res) => {
 });
 
 
-/* hyeRexx : join */
+/* Join */
 router.post('/user/join', async (req, res) => {
     const joinInfo = req.body;
-    // const sql = 'SELECT userid FROM STD248.USER where userid'
+    
+    // id, nickname, email 중복 검사
     const userInfoCheck = await dbpool.query("\
         SELECT userid FROM STD248.USER where userid = ?;\
         SELECT userid FROM STD248.USER where nickname = ?;\
         SELECT userid FROM STD248.USER where email = ?;"
         ,[joinInfo.id, joinInfo.nickname, joinInfo.email]);
+    
+    // 개별 요소에 대한 중복 확인 값 필요, 개별 쿼리로 전달
+    // const userInfoCheck = await dbpool.query("\
+    //       SELECT * FROM STD248.USER where nickname =? and email = ? and userid = ?;"
+    //     ,[joinInfo.nickname, joinInfo.email, joinInfo.id]);
 
+    // console.log("debug__ ", userInfoCheck[0]);
+
+    
     const [[idCheck], [nickCheck], [emailCheck]] = userInfoCheck[0]
     
     let [id, nick, email] = [true, true, true];
@@ -37,25 +44,35 @@ router.post('/user/join', async (req, res) => {
     if (nickCheck) {nick = false}
     if (emailCheck) {email = false}
 
+    // 중복 체크 처리 결과에 따라 분기 (모두 정상 / 중복 걸림)
     if (id && nick && email) {
-        console.log("join process in");
-
+        // 비밀번호 암호화
         const { password, salt } = await createHashedPassword(joinInfo.pass);
         
         const sqlRes = await dbpool.query("insert into STD248.USER (userid, pass, nickname, email, salt)\
         values (?, ?, ?, ?, ?);", [joinInfo.id, password, joinInfo.nickname, joinInfo.email, salt]);
-        
-        res.send({
-            result : 1
-        })
+
+        if (sqlRes[0].affectedRows > 0) {
+          res.send({
+              result : 1
+          })
+        } else {
+          console.log("DB insert fail")
+          res.send({
+            result : 0
+          })
+        }
+
     } else {
         console.log("join process fail")
         res.send({
             result : 0,
             idCheck: id,
-            emailCheck: email
+            emailCheck: email,
+            nickCheck: nick
         });
     }
+    
 });
 
 /* hyeRexx : END */
