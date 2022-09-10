@@ -100,17 +100,19 @@ export default class Game {
         this.mafia = this.turnQue[Math.floor(Math.random() * this.turnQue.length)]
     }
 
-    // DB에서 카테고리-단어 선택 -> 임시 샘플 데이터 입력
-    async setWord() {
-        const [categoriesDB] = await dbpool.query('SELECT DISTINCT category FROM GAMEWORD');
-        const categories = categoriesDB.map(obj => obj.category);
-        const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
-        const [wordsDB] = await dbpool.query('SELECT word FROM GAMEWORD WHERE category=?', selectedCategory);
-        const words = wordsDB.map(obj => obj.word);
-        const selectedWord = words[Math.floor(Math.random() * words.length)];
-        this.word = selectedWord;
+    // set given word : db 내 단어 갯수로 난수 생성하고 해당 id의 제시어 불러오기
+    async setGameWord() {
+        // GIVENWORD의 데이터 수 카운트 가져오기
+        const [[wordCntRsp]] = await dbpool.query('SELECT COUNT(*) FROM GIVENWORD');
+        let selectedWordId = Math.floor((Math.random() * wordCntRsp['COUNT(*)']) + 1);
 
-        return [selectedCategory, selectedWord];
+        // 생성한 난수로 제시어 카테고리, 제시어 불러오기
+        const [[selectedWordRsp]] = await dbpool.query('SELECT word_category, word FROM GIVENWORD WHERE word_id = ?', selectedWordId);
+
+        // 제시어 대입
+        this.word = selectedWordRsp.word;
+
+        return [selectedWordRsp.word_category, selectedWordRsp.word];
     }
 
     // 게임 시작 : 조건 : readyCnt = n - 1, player > 3
@@ -137,7 +139,7 @@ export default class Game {
             }
             this.setGameTurn();
             this.drawMafia();
-            const [category, word] = await this.setWord();
+            const [category, word] = await this.setGameWord();
     
             // webRTC 연결이 완료되면 턴, 마피아 정하고나서 game start event 발생시킴
             // 턴과 역할 보여주는 시간 5초 주고 이후 턴 진행함
