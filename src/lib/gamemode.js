@@ -7,6 +7,7 @@ export default class Game {
         this.maxCnt = 8;
         this.gameId = gameId;
         this.socketAll = [];    // 게임 플레이어들의 소켓 정보 배열
+        this.hostSocket = null; // 게임 방장의 소켓 (시작 정보 발신용)
         this.joinable = true;   // 게임 접근 가능 여부
         this.playerCnt = 0;     // 게임 플레이어 수 (max 파악용)
         this.started = false;
@@ -37,6 +38,7 @@ export default class Game {
     // 게임 host 세팅 : player Arr의 첫 번째 유저 (입장 순서 정렬)
     setHost() {
         this.host = this.player[0].userId;
+        this.hostSocket = userInfo[this.host].socket;
     }
 
     isEmpty() {
@@ -51,22 +53,29 @@ export default class Game {
                 return null;
             }
         }
-        user.gameId = this.gameId;
+
+        /* user object 처리 */
+        user.gameId = this.gameId; // gameId 대입
         user.state = false;        // 게임 in, user state 변경
         user['ready'] = false;     // 인게임용 추가 속성 : 레디 정보
-        user['servived'] = true;   // 인게임용 추가 속성 : 살았니 죽었니
-        user['votes'] = 0;         // 인게임용 추가 속성 : 득표 수 : 밤이되었습니다   
+        user['servived'] = true;   // 인게임용 추가 속성 : 생존 정보
+        user['votes'] = 0;         // 인게임용 추가 속성 : 득표 수 : night event   
 
+        /* instance 속성 처리 */
         this.player.push(user);
         this.socketAll.push(socket);
 
+        // 접속 인원 파악 , 입장 가능 정보 갱신
         this.playerCnt++;
-        this.joinable = (this.playerCnt >= this.maxCnt) ? false : true; // 게임 접근 차단
-        this.playerCnt == 1 ? this.setHost() : null; // 호스트 뽑기
-        (this.host === user.userId) && this.turnQue.push(user.userId) && (user.ready = true);
+        this.joinable = (this.playerCnt < this.maxCnt) ? true : false; // 입장 가능 정보
 
-        const hostSocket = userInfo[this.host].socket;
-        socket.to(hostSocket).emit("readyToStart", {readyToStart : (this.turnQue.length === this.playerCnt)});
+        // 호스트 처리
+        this.playerCnt == 1 ? this.setHost() : null; // 호스트 뽑기
+
+        if ( this.host === user.userId ) {
+            this.turnQue.push(user.userId);
+            user.ready = true;
+        }
     }
 
 
@@ -81,8 +90,10 @@ export default class Game {
             this.turnQue.splice(this.turnQue.findIndex(x => x === user.userId), 1);
             user.ready = false;
         }
-        const hostSocket = userInfo[this.host].socket;
-        socket.to(hostSocket).emit("readyToStart", {readyToStart: (this.turnQue.length === this.playerCnt)});
+        
+        // host에게 시작 가능 알림
+        if ( this.turnQue.length === this.playerCnt ) 
+            socket.to(this.hostSocket).emit("readyToStart", {readyToStart: true});
 
         // 다른 유저들에게 ready 알림
         this.emitAll("notifyReady", {userId : user.userId, isReady: user.ready})
@@ -377,7 +388,7 @@ export default class Game {
             exitUser.ready && this.turnQue.splice(turnIdx, 1);
             if (this.playerCnt > 0) {
                 socket.to(userInfo[this.host].socket).emit("readyToStart", {readyToStart: ((this.turnQue.length === this.playerCnt) && (this.playerCnt > 1))});
-            }
+            }  
         } else {
             console.log("게임 시작 후");
             
